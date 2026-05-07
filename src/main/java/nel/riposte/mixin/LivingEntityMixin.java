@@ -1,6 +1,5 @@
 package nel.riposte.mixin;
 
-import io.wispforest.accessories.api.AccessoriesCapability;
 import nel.riposte.HitstopData;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
@@ -54,11 +53,11 @@ public abstract class LivingEntityMixin implements HitstopData {
         if ((Object) this instanceof PlayerEntity player) {
             ParryData parryData = (ParryData) player;
 
-            // Check for Iron Plate Buff
-            int currentWindow = Riposte.CONFIG.parryWindowMs;
-            if (AccessoriesCapability.get(player).isEquipped(Riposte.IRON_PLATE)) {
-                currentWindow += Riposte.CONFIG.ironPlateWindowBonusMs;
-            }
+            // 1. Ask the Brain if this damage is legal (Fixes parrying the ground!)
+            if (!parryData.canParryDamageType(source)) return;
+
+            // 2. Ask the Brain for our dynamically calculated window
+            int currentWindow = parryData.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
             if (parryData.isParryActive(currentWindow)) {
 

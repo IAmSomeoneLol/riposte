@@ -1,7 +1,9 @@
 package nel.riposte.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.wispforest.accessories.api.AccessoriesCapability;
+import io.wispforest.accessories.api.client.AccessoriesRendererRegistry;
+import io.wispforest.accessories.api.client.SimpleAccessoryRenderer;
+import io.wispforest.accessories.api.slot.SlotReference;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
@@ -15,7 +17,12 @@ import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
@@ -36,6 +43,33 @@ public class RiposteClient implements ClientModInitializer {
 				GLFW.GLFW_KEY_R,
 				"category.riposte.keys"
 		));
+
+		// --- WISPFOREST BLANK RENDERER ---
+		// This dummy renderer intercepts the 3D model drawing process and does absolutely nothing,
+		// ensuring your character model remains perfectly clean when equipping accessories.
+		SimpleAccessoryRenderer emptyRenderer = new SimpleAccessoryRenderer() {
+
+			// Added the missing align method to satisfy the compiler!
+			@Override
+			public <M extends LivingEntity> void align(ItemStack stack, SlotReference reference, EntityModel<M> model, MatrixStack matrices) {
+				// Do nothing
+			}
+
+			@Override
+			public <M extends LivingEntity> void render(ItemStack stack, SlotReference reference, MatrixStack matrices, EntityModel<M> model, VertexConsumerProvider multiBufferSource, int light, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
+				// Do nothing
+			}
+		};
+
+		AccessoriesRendererRegistry.registerRenderer(Riposte.IRON_PLATE, () -> emptyRenderer);
+		AccessoriesRendererRegistry.registerRenderer(Riposte.LEATHER_SOCK, () -> emptyRenderer);
+		AccessoriesRendererRegistry.registerRenderer(Riposte.CREST_OF_THE_VOID, () -> emptyRenderer);
+		AccessoriesRendererRegistry.registerRenderer(Riposte.COBALT_PLATE, () -> emptyRenderer);
+		AccessoriesRendererRegistry.registerRenderer(Riposte.EVERLASTING_BLOODRING, () -> emptyRenderer);
+		AccessoriesRendererRegistry.registerRenderer(Riposte.WANDERERS_CAPE, () -> emptyRenderer);
+		AccessoriesRendererRegistry.registerRenderer(Riposte.BRAIN_CHIP, () -> emptyRenderer);
+		AccessoriesRendererRegistry.registerRenderer(Riposte.ENDER_DRAGON_SCALE, () -> emptyRenderer);
+		// ---------------------------------
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (parryKey.wasPressed()) {
@@ -62,11 +96,8 @@ public class RiposteClient implements ClientModInitializer {
 			ParryData data = (ParryData) client.player;
 			long timeSinceParry = System.currentTimeMillis() - data.getParryTimestamp();
 
-			// Check for Leather Sock Buff for HUD Rendering
-			int currentCooldown = Riposte.CONFIG.parryCooldownMs;
-			if (AccessoriesCapability.get(client.player).isEquipped(Riposte.LEATHER_SOCK)) {
-				currentCooldown -= Riposte.CONFIG.leatherSockCooldownReductionMs;
-			}
+			// Ask the Brain for the actual cooldown
+			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (CLIENT_CONFIG.iconMode == RiposteClientConfig.IconMode.DYNAMIC) {
 				if (timeSinceParry > currentCooldown + 1000) {
@@ -103,11 +134,8 @@ public class RiposteClient implements ClientModInitializer {
 		if (client.player != null) {
 			ParryData data = (ParryData) client.player;
 
-			// Check for Leather Sock Buff for input execution
-			int currentCooldown = Riposte.CONFIG.parryCooldownMs;
-			if (AccessoriesCapability.get(client.player).isEquipped(Riposte.LEATHER_SOCK)) {
-				currentCooldown -= Riposte.CONFIG.leatherSockCooldownReductionMs;
-			}
+			// Ask the Brain for the actual cooldown before firing the packet
+			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (data.canParry(currentCooldown)) {
 				data.setParryTimestamp(System.currentTimeMillis());

@@ -1,15 +1,39 @@
 {
   "item.riposte.iron_plate": "Iron Plate",
   "item.riposte.leather_sock": "Leather Socks",
+  "item.riposte.crest_of_the_void": "Crest of the Void",
+  "item.riposte.cobalt_plate": "Cobalt Plate",
+  "item.riposte.everlasting_bloodring": "Everlasting Bloodring",
+  "item.riposte.wanderers_cape": "Wanderer's Cape",
+  "item.riposte.brain_chip": "Brain Chip",
+  "item.riposte.ender_dragon_scale": "Ender Dragon Scale",
 
   "tooltip.riposte.slot.parry": "When in Parry Slot:",
+  "tooltip.riposte.slot.ring": "When in Ring Slot:",
+  "tooltip.riposte.slot.necklace": "When in Necklace Slot:",
+  "tooltip.riposte.slot.head": "When in Head Slot:",
+  "tooltip.riposte.slot.charm": "When in Charm Slot:",
+  "tooltip.riposte.passive": "Passive Effect:",
   "tooltip.riposte.passive.projectile": " Allows you to parry projectile damage",
-  "tooltip.riposte.modifier.recharge_rate": " +3 Parry Recharge Rate",
   "tooltip.riposte.passive.fall": " Allows you to parry fall damage",
+  "tooltip.riposte.passive.all": " Allows you to parry any form of damage",
+  "tooltip.riposte.passive.infinite_kb": " Infinite knockback resistance",
+  "tooltip.riposte.passive.bloodring_1": " +2x Parry Window Length",
+  "tooltip.riposte.passive.bloodring_2": " +1.5x Damage Taken",
+  "tooltip.riposte.passive.charge_meter": " Successfully parrying charges parry meter",
+  "tooltip.riposte.passive.damage_dealt": " +1.1x Damage Dealt",
+  "tooltip.riposte.passive.head_slot": " +1 Head Slot",
 
-  "category.riposte.keys": "Riposte Mechanics",
-  "key.riposte.parry": "Parry",
+  "tooltip.riposte.modifier.recharge_rate_3": " +3 Parry Recharge Rate",
+  "tooltip.riposte.modifier.recharge_rate_5": " +5 Parry Recharge Rate",
+  "tooltip.riposte.modifier.recharge_rate_100": " +100% Parry Recharge Rate",
+  "tooltip.riposte.modifier.invuln_time": " +1 Invulnerability Time",
+
+  "tooltip.riposte.warning.no_stack": " Does not stack with itself",
 
   "accessories.slot.riposte.parry": "Parry",
-  "accessories.slot_group.riposte.parry": "Riposte Stats"
+  "accessories.slot_group.riposte.parry": "Riposte Stats",
+
+  "category.riposte.keys": "Riposte Mechanics",
+  "key.riposte.parry": "Parry"
 }

@@ -1,6 +1,7 @@
 package nel.riposte.item;
 
 import io.wispforest.accessories.api.Accessory;
+import io.wispforest.accessories.api.slot.SlotReference;
 import net.minecraft.client.item.TooltipContext;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -13,24 +14,30 @@ import java.util.List;
 
 public class RiposteAccessoryItem extends Item implements Accessory {
 
+    private final String targetSlot;
     private final String[] tooltipKeys;
 
-    // Custom constructor that accepts our specific design doc attributes
-    public RiposteAccessoryItem(Settings settings, String... tooltipKeys) {
+    public RiposteAccessoryItem(Settings settings, String targetSlot, String... tooltipKeys) {
         super(settings);
+        this.targetSlot = targetSlot;
         this.tooltipKeys = tooltipKeys;
+    }
+
+    @Override
+    public boolean canEquip(ItemStack stack, SlotReference reference) {
+        // Strictly enforces that this item can ONLY enter its assigned slot
+        return reference.slotName().equals(this.targetSlot);
     }
 
     @Override
     public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
         if (this.tooltipKeys.length > 0) {
-            // Adds a blank line for spacing
             tooltip.add(Text.empty());
 
-            // Adds the Gray slot indicator
-            tooltip.add(Text.translatable("tooltip.riposte.slot.parry").formatted(Formatting.GRAY));
+            // Cleanly grabs the assigned slot name for the gray header text
+            String cleanSlotName = this.targetSlot.replace("riposte:", "");
+            tooltip.add(Text.translatable("tooltip.riposte.slot." + cleanSlotName).formatted(Formatting.GRAY));
 
-            // Loops through our attributes and colors them Blue
             for (String key : tooltipKeys) {
                 tooltip.add(Text.translatable(key).formatted(Formatting.BLUE));
             }
