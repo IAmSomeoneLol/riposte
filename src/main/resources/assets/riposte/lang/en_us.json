@@ -1,0 +1,12 @@
+{
+  "item.riposte.iron_plate": "Iron Plate",
+  "item.riposte.leather_sock": "Leather Socks",
+
+  "tooltip.riposte.slot.parry": "When in Parry Slot:",
+  "tooltip.riposte.passive.projectile": " Allows you to parry projectile damage",
+  "tooltip.riposte.modifier.recharge_rate": " +3 Parry Recharge Rate",
+  "tooltip.riposte.passive.fall": " Allows you to parry fall damage",
+
+  "category.riposte.keys": "Riposte Mechanics",
+  "key.riposte.parry": "Parry"
+}
