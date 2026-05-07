@@ -13,8 +13,9 @@ public class RiposteConfig extends Config {
     // Mechanics Settings
     public int parryWindowMs = 175;
     public int parryCooldownMs = 1000;
-    public double parryKnockback = 0.5;
+    public double parryKnockback = 1.0;
     public boolean enforceKnockback = true;
+    public boolean deflectProjectiles = true; // NEW: Arrow deflection
 
     // Accessory Buffs
     public int ironPlateWindowBonusMs = 50;
@@ -22,7 +23,7 @@ public class RiposteConfig extends Config {
 
     // Hitstop Settings
     public boolean hitstopEnabled = true;
-    public int hitstopMs = 175;
+    public int hitstopMs = 30; // Freezes the entities for ~1 tick on parry
 
     // Combo Parry Settings
     public boolean comboParryEnabled = true;

@@ -25,7 +25,8 @@ public class RiposteAccessoryItem extends Item implements Accessory {
 
     @Override
     public boolean canEquip(ItemStack stack, SlotReference reference) {
-        // Strictly enforces that this item can ONLY enter its assigned slot
+        // Wispforest internal slot names are just "parry", "hat", "ring", etc.
+        // This will now perfectly match the targetSlot string!
         return reference.slotName().equals(this.targetSlot);
     }
 
@@ -34,9 +35,8 @@ public class RiposteAccessoryItem extends Item implements Accessory {
         if (this.tooltipKeys.length > 0) {
             tooltip.add(Text.empty());
 
-            // Cleanly grabs the assigned slot name for the gray header text
-            String cleanSlotName = this.targetSlot.replace("riposte:", "");
-            tooltip.add(Text.translatable("tooltip.riposte.slot." + cleanSlotName).formatted(Formatting.GRAY));
+            // Appends the raw target slot name directly into the translation key
+            tooltip.add(Text.translatable("tooltip.riposte.slot." + this.targetSlot).formatted(Formatting.GRAY));
 
             for (String key : tooltipKeys) {
                 tooltip.add(Text.translatable(key).formatted(Formatting.BLUE));

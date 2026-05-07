@@ -20,17 +20,18 @@ public class Riposte implements ModInitializer {
 
 	public static RiposteConfig CONFIG;
 
-	// --- ACCESSORIES (Now with hardcoded Target Slots) ---
-	public static final Item IRON_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "riposte:parry",
+	// --- ACCESSORIES ---
+	// Notice the target slots are now exactly "parry", "ring", "necklace", etc.
+	public static final Item IRON_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
 			"tooltip.riposte.passive", "tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3");
 
-	public static final Item LEATHER_SOCK = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "riposte:parry",
+	public static final Item LEATHER_SOCK = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
 			"tooltip.riposte.passive", "tooltip.riposte.passive.fall");
 
-	public static final Item CREST_OF_THE_VOID = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "riposte:parry",
+	public static final Item CREST_OF_THE_VOID = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
 			"tooltip.riposte.passive", "tooltip.riposte.passive.all", "tooltip.riposte.modifier.recharge_rate_3");
 
-	public static final Item COBALT_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "riposte:parry",
+	public static final Item COBALT_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
 			"tooltip.riposte.passive", "tooltip.riposte.passive.projectile", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time");
 
 	public static final Item EVERLASTING_BLOODRING = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "ring",
@@ -44,7 +45,6 @@ public class Riposte implements ModInitializer {
 
 	public static final Item ENDER_DRAGON_SCALE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "charm",
 			"tooltip.riposte.passive.head_slot", "tooltip.riposte.warning.no_stack");
-
 	public static final Identifier PARRY_SYNC_PACKET = new Identifier(MOD_ID, "parry_sync");
 
 	@Override
