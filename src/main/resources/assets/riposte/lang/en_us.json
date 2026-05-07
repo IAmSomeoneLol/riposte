@@ -8,5 +8,8 @@
   "tooltip.riposte.passive.fall": " Allows you to parry fall damage",
 
   "category.riposte.keys": "Riposte Mechanics",
-  "key.riposte.parry": "Parry"
+  "key.riposte.parry": "Parry",
+
+  "accessories.slot.riposte.parry": "Parry",
+  "accessories.slot_group.riposte.parry": "Riposte Stats"
 }
