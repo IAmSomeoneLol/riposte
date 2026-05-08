@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(PersistentProjectileEntity.class)
 public interface PersistentProjectileEntityAccessor {
 
-    // This tells Fabric: "Force open the 'inGround' variable and let me set it"
+    // On ground check
     @Accessor("inGround")
     void setInGround(boolean inGround);
 

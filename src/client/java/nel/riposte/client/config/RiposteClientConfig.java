@@ -26,7 +26,7 @@ public class RiposteClientConfig extends Config {
     // HUD Icon Settings
     public IconMode iconMode = IconMode.STATIC;
 
-    // Centered by default (0, 0 offset). Y is shifted slightly down so it doesn't block the actual crosshair dot
+    // Centered by default (0, 0 offset). y shifted
     public int iconXOffset = 0;
     public int iconYOffset = 20;
     public float iconScale = 1.0f;

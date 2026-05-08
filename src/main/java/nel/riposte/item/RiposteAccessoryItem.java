@@ -25,8 +25,6 @@ public class RiposteAccessoryItem extends Item implements Accessory {
 
     @Override
     public boolean canEquip(ItemStack stack, SlotReference reference) {
-        // Wispforest internal slot names are just "parry", "hat", "ring", etc.
-        // This will now perfectly match the targetSlot string!
         return reference.slotName().equals(this.targetSlot);
     }
 

@@ -32,7 +32,7 @@ public interface ParryData {
 
     // --- ACCESSORY STAT CALCULATORS ---
 
-    // 1. Calculates the actual cooldown based on Recharge Rate bonuses
+    // Cooldown recharge rate
     default int getCalculatedCooldown(int baseCooldownMs) {
         PlayerEntity player = (PlayerEntity) this;
         var capability = AccessoriesCapability.get(player);
@@ -49,7 +49,7 @@ public interface ParryData {
         return (int) (baseCooldownMs / rate);
     }
 
-    // 2. Calculates the actual forgiveness window
+    // hitstop
     default int getCalculatedWindow(int baseWindowMs) {
         PlayerEntity player = (PlayerEntity) this;
         var capability = AccessoriesCapability.get(player);
@@ -61,7 +61,7 @@ public interface ParryData {
         return baseWindowMs;
     }
 
-    // 3. Filters what damage is legally allowed to be parried
+    // Filter
     default boolean canParryDamageType(DamageSource source) {
         PlayerEntity player = (PlayerEntity) this;
         var capability = AccessoriesCapability.get(player);
@@ -73,16 +73,15 @@ public interface ParryData {
         // Leather Socks: Allows fall damage
         if (source.isOf(DamageTypes.FALL) && capability.isEquipped(Riposte.LEATHER_SOCK)) return true;
 
-        // Iron/Cobalt Plate: Allows projectiles (arrows, fireballs, etc.)
+        // Iron/Cboalt Plate: Allows projectiles (arrows, fireballs, etc
         boolean hasPlate = capability.isEquipped(Riposte.IRON_PLATE) || capability.isEquipped(Riposte.COBALT_PLATE);
         if (source.isIn(DamageTypeTags.IS_PROJECTILE) && hasPlate) return true;
 
-        // DEFAULT ENGINE RULES: Only parry direct entity melee attacks.
-        // This stops you from parrying fire, drowning, void, and standard fall damage.
+        // DEFAULT ENGINE: Only parry direct entity melee attacks.
         return source.getAttacker() instanceof LivingEntity && !source.isIn(DamageTypeTags.IS_PROJECTILE) && !source.isIndirect();
     }
 
-    // --- KNOCKBACK ENGINE ---
+    // --- KNOCKBACK ENGINE
     default void applyParryKnockback(LivingEntity target, double strength, double x, double z) {
         if (Riposte.CONFIG.enforceKnockback) {
             target.velocityModified = true;

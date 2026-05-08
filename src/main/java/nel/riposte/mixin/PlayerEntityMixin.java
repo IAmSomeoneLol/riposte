@@ -53,7 +53,7 @@ public class PlayerEntityMixin implements ParryData {
         this.lastParriedEntityId = id;
     }
 
-    // COMBO PARRY TRIGGER
+    // COMBO TRIGGER
     @Inject(method = "attack", at = @At("TAIL"))
     private void riposte$onAttack(Entity target, CallbackInfo ci) {
         if (Riposte.CONFIG.comboParryEnabled && target instanceof LivingEntity livingTarget) {
@@ -66,7 +66,7 @@ public class PlayerEntityMixin implements ParryData {
                     PlayerEntity player = (PlayerEntity) (Object) this;
                     double heavyKnockback = Riposte.CONFIG.parryKnockback * Riposte.CONFIG.comboParryMultiplier;
 
-                    // Route through our custom math
+                    // Routeer
                     this.applyParryKnockback(livingTarget, heavyKnockback, player.getX() - livingTarget.getX(), player.getZ() - livingTarget.getZ());
 
                     this.lastParriedEntityId = -1;

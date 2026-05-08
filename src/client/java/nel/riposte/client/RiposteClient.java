@@ -44,7 +44,7 @@ public class RiposteClient implements ClientModInitializer {
 				"category.riposte.keys"
 		));
 
-		// --- WISPFOREST BLANK RENDERER ---
+		// --- WISPFOREST BLANK RENDERER
 		// This dummy renderer intercepts the 3D model drawing process and does absolutely nothing,
 		// ensuring your character model remains perfectly clean when equipping accessories.
 		SimpleAccessoryRenderer emptyRenderer = new SimpleAccessoryRenderer() {
@@ -69,7 +69,7 @@ public class RiposteClient implements ClientModInitializer {
 		AccessoriesRendererRegistry.registerRenderer(Riposte.WANDERERS_CAPE, () -> emptyRenderer);
 		AccessoriesRendererRegistry.registerRenderer(Riposte.BRAIN_CHIP, () -> emptyRenderer);
 		AccessoriesRendererRegistry.registerRenderer(Riposte.ENDER_DRAGON_SCALE, () -> emptyRenderer);
-		// ---------------------------------
+		// ---------------------------------Registers
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (parryKey.wasPressed()) {
@@ -96,7 +96,7 @@ public class RiposteClient implements ClientModInitializer {
 			ParryData data = (ParryData) client.player;
 			long timeSinceParry = System.currentTimeMillis() - data.getParryTimestamp();
 
-			// Ask the Brain for the actual cooldown
+			// Cooldown request
 			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (CLIENT_CONFIG.iconMode == RiposteClientConfig.IconMode.DYNAMIC) {
@@ -134,7 +134,7 @@ public class RiposteClient implements ClientModInitializer {
 		if (client.player != null) {
 			ParryData data = (ParryData) client.player;
 
-			// Ask the Brain for the actual cooldown before firing the packet
+			// Brainz
 			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (data.canParry(currentCooldown)) {

@@ -57,16 +57,16 @@ public abstract class LivingEntityMixin implements HitstopData {
         if ((Object) this instanceof PlayerEntity player) {
             ParryData parryData = (ParryData) player;
 
-            // Ask the Brain if this damage is legal
+            // try damage
             if (!parryData.canParryDamageType(source)) return;
 
-            // Ask the Brain for our dynamically calculated window
+            // hitstop time duration
             int currentWindow = parryData.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
             if (parryData.isParryActive(currentWindow)) {
                 cir.setReturnValue(false); // Deny the damage
 
-                // --- PROJECTILE PARRY LOGIC ---
+                // --- PROJECTILE PARRY LOGIC (copy from bettershield edited)
                 if (source.getSource() instanceof ProjectileEntity projectile) {
                     player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 1.0f);
 
@@ -89,7 +89,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                         }
                         projectile.velocityModified = true;
                     }
-                    return; // End sequence early to prevent melee knockback/hitstop
+                    return;
                 }
 
                 // --- MELEE PARRY LOGIC ---

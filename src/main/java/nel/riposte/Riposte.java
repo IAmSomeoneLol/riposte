@@ -20,8 +20,6 @@ public class Riposte implements ModInitializer {
 
 	public static RiposteConfig CONFIG;
 
-	// --- ACCESSORIES ---
-	// Notice the target slots are now exactly "parry", "ring", "necklace", etc.
 	public static final Item IRON_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
 			"tooltip.riposte.passive", "tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3");
 
