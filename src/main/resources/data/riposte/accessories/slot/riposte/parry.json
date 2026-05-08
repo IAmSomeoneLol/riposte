@@ -2,9 +2,6 @@
   "replace": false,
   "amount": 1,
   "operation": "set",
-  "order": 100,
-  "icon": "riposte:gui/slot/parry",
-  "validators": [
-    "accessories:tag"
-  ]
+  "order": 1000,
+  "icon": "riposte:gui/slot/parry"
 }
