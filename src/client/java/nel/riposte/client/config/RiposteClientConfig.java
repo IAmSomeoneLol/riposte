@@ -30,4 +30,8 @@ public class RiposteClientConfig extends Config {
     public int iconXOffset = 0;
     public int iconYOffset = 20;
     public float iconScale = 1.0f;
+
+    // Visual Effects
+    public boolean parryCameraShake = true;
+    public boolean parryScreenFlash = true;
 }

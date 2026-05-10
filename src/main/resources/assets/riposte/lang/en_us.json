@@ -35,5 +35,8 @@
   "accessories.slot_group.riposte.parry": "Riposte Stats",
 
   "category.riposte.keys": "Riposte Mechanics",
-  "key.riposte.parry": "Parry"
+  "key.riposte.parry": "Parry",
+
+  "riposte.client.parryCameraShake": "Parry Camera Shake",
+  "riposte.client.parryScreenFlash": "Parry Screen Flash"
 }

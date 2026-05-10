@@ -73,12 +73,22 @@ public interface ParryData {
         // Leather Socks: Allows fall damage
         if (source.isOf(DamageTypes.FALL) && capability.isEquipped(Riposte.LEATHER_SOCK)) return true;
 
-        // Iron/Cboalt Plate: Allows projectiles (arrows, fireballs, etc
+        // Iron/Cobalt Plate: Allows projectiles (arrows, fireballs, etc
         boolean hasPlate = capability.isEquipped(Riposte.IRON_PLATE) || capability.isEquipped(Riposte.COBALT_PLATE);
         if (source.isIn(DamageTypeTags.IS_PROJECTILE) && hasPlate) return true;
 
         // DEFAULT ENGINE: Only parry direct entity melee attacks.
         return source.getAttacker() instanceof LivingEntity && !source.isIn(DamageTypeTags.IS_PROJECTILE) && !source.isIndirect();
+    }
+
+    // Determines if the player has the correct accessory to parry projectiles
+    default boolean canParryProjectiles() {
+        PlayerEntity player = (PlayerEntity) this;
+        var capability = AccessoriesCapability.get(player);
+        if (capability == null) return false;
+
+        if (capability.isEquipped(Riposte.CREST_OF_THE_VOID)) return true;
+        return capability.isEquipped(Riposte.IRON_PLATE) || capability.isEquipped(Riposte.COBALT_PLATE);
     }
 
     // --- KNOCKBACK ENGINE

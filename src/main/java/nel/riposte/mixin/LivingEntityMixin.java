@@ -1,9 +1,10 @@
 package nel.riposte.mixin;
 
-import io.wispforest.accessories.api.AccessoriesCapability;
 import nel.riposte.HitstopData;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
@@ -12,15 +13,15 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.ElderGuardianEntity;
 import net.minecraft.entity.mob.WardenEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.MiningToolItem;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.TridentItem;
+import net.minecraft.registry.tag.DamageTypeTags;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -57,39 +58,27 @@ public abstract class LivingEntityMixin implements HitstopData {
         if ((Object) this instanceof PlayerEntity player) {
             ParryData parryData = (ParryData) player;
 
-            // try damage
             if (!parryData.canParryDamageType(source)) return;
 
-            // hitstop time duration
             int currentWindow = parryData.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
             if (parryData.isParryActive(currentWindow)) {
                 cir.setReturnValue(false); // Deny the damage
 
-                // --- PROJECTILE PARRY LOGIC (copy from bettershield edited)
-                if (source.getSource() instanceof ProjectileEntity projectile) {
-                    player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 1.0f);
-
-                    if (Riposte.CONFIG.deflectProjectiles) {
-                        Entity owner = projectile.getOwner();
-
-                        // CRITICAL FIX: Transfer ownership to the player.
-                        // This stops the arrow from hurting you, and allows it to hurt the enemy!
-                        projectile.setOwner(player);
-
-                        if (owner != null) {
-                            // Calculate trajectory from the player's eyes to the enemy's eyes
-                            Vec3d dir = owner.getEyePos().subtract(player.getEyePos()).normalize();
-                            // Fire it back slightly faster (3.0f) so it feels like a real deflection
-                            projectile.setVelocity(dir.x, dir.y, dir.z, 3.0f, 0.0f);
-                        } else {
-                            // If no owner, shoot exactly where the player is currently looking
-                            Vec3d lookDir = player.getRotationVector();
-                            projectile.setVelocity(lookDir.x, lookDir.y, lookDir.z, 3.0f, 0.0f);
-                        }
-                        projectile.velocityModified = true;
-                    }
+                if (source.isIn(DamageTypeTags.IS_PROJECTILE)) {
                     return;
+                }
+
+                Entity rawAttacker = source.getAttacker();
+
+                // --- MULTI-HIT DEBOUNCE (Slime/Lag Fix) ---
+                if (rawAttacker != null) {
+                    long timeSinceLastParry = System.currentTimeMillis() - parryData.getSuccessfulParryTimestamp();
+
+                    // If we parried this exact entity within the current window, stay invulnerable but skip the FX
+                    if (rawAttacker.getId() == parryData.getLastParriedEntityId() && timeSinceLastParry <= currentWindow) {
+                        return;
+                    }
                 }
 
                 // --- MELEE PARRY LOGIC ---
@@ -103,10 +92,14 @@ public abstract class LivingEntityMixin implements HitstopData {
                     player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 1.0f);
                 }
 
-                if (source.getAttacker() instanceof LivingEntity attacker) {
+                if (rawAttacker instanceof LivingEntity attacker) {
 
                     parryData.setSuccessfulParryTimestamp(System.currentTimeMillis());
                     parryData.setLastParriedEntityId(attacker.getId());
+
+                    if (player instanceof ServerPlayerEntity serverPlayer) {
+                        ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, PacketByteBufs.create());
+                    }
 
                     boolean isBoss = attacker instanceof WitherEntity ||
                             attacker instanceof EnderDragonEntity ||

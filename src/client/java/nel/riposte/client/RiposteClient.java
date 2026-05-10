@@ -44,21 +44,12 @@ public class RiposteClient implements ClientModInitializer {
 				"category.riposte.keys"
 		));
 
-		// --- WISPFOREST BLANK RENDERER
-		// This dummy renderer intercepts the 3D model drawing process and does absolutely nothing,
-		// ensuring your character model remains perfectly clean when equipping accessories.
 		SimpleAccessoryRenderer emptyRenderer = new SimpleAccessoryRenderer() {
-
-			// Added the missing align method to satisfy the compiler!
 			@Override
-			public <M extends LivingEntity> void align(ItemStack stack, SlotReference reference, EntityModel<M> model, MatrixStack matrices) {
-				// Do nothing
-			}
+			public <M extends LivingEntity> void align(ItemStack stack, SlotReference reference, EntityModel<M> model, MatrixStack matrices) {}
 
 			@Override
-			public <M extends LivingEntity> void render(ItemStack stack, SlotReference reference, MatrixStack matrices, EntityModel<M> model, VertexConsumerProvider multiBufferSource, int light, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
-				// Do nothing
-			}
+			public <M extends LivingEntity> void render(ItemStack stack, SlotReference reference, MatrixStack matrices, EntityModel<M> model, VertexConsumerProvider multiBufferSource, int light, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {}
 		};
 
 		AccessoriesRendererRegistry.registerRenderer(Riposte.IRON_PLATE, () -> emptyRenderer);
@@ -69,7 +60,14 @@ public class RiposteClient implements ClientModInitializer {
 		AccessoriesRendererRegistry.registerRenderer(Riposte.WANDERERS_CAPE, () -> emptyRenderer);
 		AccessoriesRendererRegistry.registerRenderer(Riposte.BRAIN_CHIP, () -> emptyRenderer);
 		AccessoriesRendererRegistry.registerRenderer(Riposte.ENDER_DRAGON_SCALE, () -> emptyRenderer);
-		// ---------------------------------Registers
+
+		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_SUCCESS_PACKET, (client, handler, buf, responseSender) -> {
+			client.execute(() -> {
+				if (client.player != null) {
+					((ParryData) client.player).setSuccessfulParryTimestamp(System.currentTimeMillis());
+				}
+			});
+		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (parryKey.wasPressed()) {
@@ -94,9 +92,21 @@ public class RiposteClient implements ClientModInitializer {
 			if (client.player == null) return;
 
 			ParryData data = (ParryData) client.player;
-			long timeSinceParry = System.currentTimeMillis() - data.getParryTimestamp();
+			int screenWidth = client.getWindow().getScaledWidth();
+			int screenHeight = client.getWindow().getScaledHeight();
 
-			// Cooldown request
+			long timeSinceSuccess = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
+
+			if (CLIENT_CONFIG.parryScreenFlash && timeSinceSuccess < 150) {
+				float alpha = 1.0f - ((float) timeSinceSuccess / 150.0f);
+				int color = ((int) (alpha * 100) << 24) | 0xFFFFFF;
+
+				RenderSystem.enableBlend();
+				drawContext.fill(0, 0, screenWidth, screenHeight, color);
+				RenderSystem.disableBlend();
+			}
+
+			long timeSinceParry = System.currentTimeMillis() - data.getParryTimestamp();
 			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (CLIENT_CONFIG.iconMode == RiposteClientConfig.IconMode.DYNAMIC) {
@@ -105,8 +115,6 @@ public class RiposteClient implements ClientModInitializer {
 				}
 			}
 
-			int screenWidth = client.getWindow().getScaledWidth();
-			int screenHeight = client.getWindow().getScaledHeight();
 			int x = (screenWidth / 2) + CLIENT_CONFIG.iconXOffset;
 			int y = (screenHeight / 2) + CLIENT_CONFIG.iconYOffset;
 
@@ -134,7 +142,6 @@ public class RiposteClient implements ClientModInitializer {
 		if (client.player != null) {
 			ParryData data = (ParryData) client.player;
 
-			// Brainz
 			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (data.canParry(currentCooldown)) {

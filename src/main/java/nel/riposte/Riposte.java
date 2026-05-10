@@ -43,7 +43,9 @@ public class Riposte implements ModInitializer {
 
 	public static final Item ENDER_DRAGON_SCALE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "charm",
 			"tooltip.riposte.passive.head_slot", "tooltip.riposte.warning.no_stack");
+
 	public static final Identifier PARRY_SYNC_PACKET = new Identifier(MOD_ID, "parry_sync");
+	public static final Identifier PARRY_SUCCESS_PACKET = new Identifier(MOD_ID, "parry_success");
 
 	@Override
 	public void onInitialize() {
@@ -59,7 +61,6 @@ public class Riposte implements ModInitializer {
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "brain_chip"), BRAIN_CHIP);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ender_dragon_scale"), ENDER_DRAGON_SCALE);
 
-		// Adds all items to the standard Combat creative tab
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
 			entries.add(IRON_PLATE);
 			entries.add(LEATHER_SOCK);
