@@ -54,7 +54,6 @@ public abstract class LivingEntityMixin implements HitstopData {
         }
     }
 
-    // --- COBALT PLATE: INFINITE KNOCKBACK RESISTANCE ---
     @Inject(method = "takeKnockback", at = @At("HEAD"), cancellable = true)
     private void riposte$cobaltPlateKnockback(double strength, double x, double z, CallbackInfo ci) {
         if ((Object) this instanceof PlayerEntity player) {
@@ -65,7 +64,6 @@ public abstract class LivingEntityMixin implements HitstopData {
         }
     }
 
-    // --- BLOODRING & WANDERER'S CAPE DAMAGE MULTIPLIERS ---
     @ModifyVariable(method = "damage", at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private float riposte$accessoryDamageModifiers(float amount, DamageSource source) {
         float modifiedAmount = amount;
@@ -123,7 +121,6 @@ public abstract class LivingEntityMixin implements HitstopData {
                     player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 1.0f);
                 }
 
-                // CRITICAL FIX: The successful parry logic runs regardless of attacker presence (fixes Fall Damage VFX missing)
                 parryData.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
                 if (player instanceof ServerPlayerEntity serverPlayer) {
@@ -132,7 +129,7 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                 var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
                 if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
-                    parryData.addParryMeter(25.0f);
+                    parryData.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
                 }
 
                 if (rawAttacker instanceof LivingEntity attacker) {
@@ -150,13 +147,12 @@ public abstract class LivingEntityMixin implements HitstopData {
                         parryData.applyParryKnockback(attacker, Riposte.CONFIG.parryKnockback, player.getX() - attacker.getX(), player.getZ() - attacker.getZ());
                     }
 
-                    if (Riposte.CONFIG.hitstopEnabled) {
+                    if (Riposte.CONFIG.hitstop) {
                         int hitstopFrames = Math.max(1, Riposte.CONFIG.hitstopMs / 50);
                         this.setHitstop(hitstopFrames);
                         ((HitstopData) attacker).setHitstop(hitstopFrames);
                     }
                 } else {
-                    // Reset the parry memory if we parried a non-entity like the ground
                     parryData.setLastParriedEntityId(-1);
                 }
             }

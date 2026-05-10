@@ -26,6 +26,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
+import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
+import dev.kosmx.playerAnim.api.layered.ModifierLayer;
+import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
+import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 
 public class RiposteClient implements ClientModInitializer {
 
@@ -64,21 +69,43 @@ public class RiposteClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_SUCCESS_PACKET, (client, handler, buf, responseSender) -> {
 			client.execute(() -> {
 				if (client.player != null) {
-					((ParryData) client.player).setSuccessfulParryTimestamp(System.currentTimeMillis());
+					ParryData data = (ParryData) client.player;
+					data.setSuccessfulParryTimestamp(System.currentTimeMillis());
+
+					var capability = io.wispforest.accessories.api.AccessoriesCapability.get(client.player);
+					if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
+						data.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
+					}
+				}
+			});
+		});
+
+		ClientPlayNetworking.registerGlobalReceiver(Riposte.COMBO_SUCCESS_PACKET, (client, handler, buf, responseSender) -> {
+			client.execute(() -> {
+				if (client.player != null) {
+					var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, "combo_kick"));
+					if (animation != null) {
+						ModifierLayer<dev.kosmx.playerAnim.api.layered.IAnimation> animationContainer =
+								(ModifierLayer<dev.kosmx.playerAnim.api.layered.IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
+
+						if (animationContainer != null) {
+							animationContainer.setAnimation(new KeyframeAnimationPlayer(animation));
+						}
+					}
 				}
 			});
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (parryKey.wasPressed()) {
-				if (CLIENT_CONFIG.executionMode == RiposteClientConfig.ExecutionMode.KEYBIND) {
+				if (CLIENT_CONFIG.parryActivation == RiposteClientConfig.ExecutionMode.KEYBIND) {
 					attemptParry(client);
 				}
 			}
 		});
 
 		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-			if (world.isClient && CLIENT_CONFIG.executionMode == RiposteClientConfig.ExecutionMode.CAMERA) {
+			if (world.isClient && CLIENT_CONFIG.parryActivation == RiposteClientConfig.ExecutionMode.CAMERA) {
 				MinecraftClient client = MinecraftClient.getInstance();
 				if (attemptParry(client)) {
 					return ActionResult.CONSUME;
@@ -97,7 +124,7 @@ public class RiposteClient implements ClientModInitializer {
 
 			long timeSinceSuccess = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
 
-			if (CLIENT_CONFIG.parryScreenFlash && timeSinceSuccess < 150) {
+			if (CLIENT_CONFIG.screenFlash && timeSinceSuccess < 150) {
 				float alpha = 1.0f - ((float) timeSinceSuccess / 150.0f);
 				int color = ((int) (alpha * 100) << 24) | 0xFFFFFF;
 
@@ -115,8 +142,8 @@ public class RiposteClient implements ClientModInitializer {
 				}
 			}
 
-			int x = (screenWidth / 2) + CLIENT_CONFIG.iconXOffset;
-			int y = (screenHeight / 2) + CLIENT_CONFIG.iconYOffset;
+			int x = (screenWidth / 2) + CLIENT_CONFIG.xOffset;
+			int y = (screenHeight / 2) + CLIENT_CONFIG.yOffset;
 
 			drawContext.getMatrices().push();
 			drawContext.getMatrices().translate(x, y, 0);

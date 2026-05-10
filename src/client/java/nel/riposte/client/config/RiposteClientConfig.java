@@ -1,6 +1,7 @@
 package nel.riposte.client.config;
 
 import me.fzzyhmstrs.fzzy_config.config.Config;
+import me.fzzyhmstrs.fzzy_config.config.ConfigGroup;
 import nel.riposte.Riposte;
 import net.minecraft.util.Identifier;
 
@@ -20,18 +21,17 @@ public class RiposteClientConfig extends Config {
         DYNAMIC
     }
 
-    // Execution Mode
-    public ExecutionMode executionMode = ExecutionMode.KEYBIND;
+    public ExecutionMode parryActivation = ExecutionMode.KEYBIND;
 
-    // HUD Icon Settings
+    public ConfigGroup iconCooldownGroup = new ConfigGroup("iconCooldown");
     public IconMode iconMode = IconMode.STATIC;
-
-    // Centered by default (0, 0 offset). y shifted
-    public int iconXOffset = 0;
-    public int iconYOffset = 20;
+    public int xOffset = 0;
+    public int yOffset = 20;
+    @ConfigGroup.Pop
     public float iconScale = 1.0f;
 
-    // Visual Effects
-    public boolean parryCameraShake = true;
-    public boolean parryScreenFlash = true;
+    public ConfigGroup vfxSettingsGroup = new ConfigGroup("vfxSettings");
+    public boolean cameraShake = true;
+    @ConfigGroup.Pop
+    public boolean screenFlash = true;
 }

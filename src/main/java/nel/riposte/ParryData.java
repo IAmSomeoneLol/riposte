@@ -9,34 +9,23 @@ import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.util.math.Vec3d;
 
 public interface ParryData {
-    // Basic Parry Timing
     long getParryTimestamp();
     void setParryTimestamp(long timestamp);
 
-    // Combo Parry Memory
     long getSuccessfulParryTimestamp();
     void setSuccessfulParryTimestamp(long timestamp);
     int getLastParriedEntityId();
     void setLastParriedEntityId(int id);
 
-    // Wanderer's Cape Meter
-    float getParryMeter();
-    void addParryMeter(float amount);
-
-    // Calculates if the current time falls within the active parry frames
     default boolean isParryActive(int windowMs) {
         long timeSinceParry = System.currentTimeMillis() - getParryTimestamp();
         return timeSinceParry >= 0 && timeSinceParry <= windowMs;
     }
 
-    // Calculates if enough time has passed to parry again
     default boolean canParry(int cooldownMs) {
         return System.currentTimeMillis() - getParryTimestamp() >= cooldownMs;
     }
 
-    // --- ACCESSORY STAT CALCULATORS ---
-
-    // Cooldown recharge rate
     default int getCalculatedCooldown(int baseCooldownMs) {
         PlayerEntity player = (PlayerEntity) this;
         var capability = AccessoriesCapability.get(player);
@@ -53,7 +42,6 @@ public interface ParryData {
         return (int) (baseCooldownMs / rate);
     }
 
-    // Hitstop
     default int getCalculatedWindow(int baseWindowMs) {
         PlayerEntity player = (PlayerEntity) this;
         var capability = AccessoriesCapability.get(player);
@@ -65,7 +53,6 @@ public interface ParryData {
         return baseWindowMs;
     }
 
-    // Filter
     default boolean canParryDamageType(DamageSource source) {
         PlayerEntity player = (PlayerEntity) this;
         var capability = AccessoriesCapability.get(player);
@@ -81,7 +68,6 @@ public interface ParryData {
         return source.getAttacker() instanceof LivingEntity && !source.isIn(DamageTypeTags.IS_PROJECTILE) && !source.isIndirect();
     }
 
-    // Determines if the player has the correct accessory to parry projectiles
     default boolean canParryProjectiles() {
         PlayerEntity player = (PlayerEntity) this;
         var capability = AccessoriesCapability.get(player);
@@ -91,7 +77,12 @@ public interface ParryData {
         return capability.isEquipped(Riposte.IRON_PLATE) || capability.isEquipped(Riposte.COBALT_PLATE);
     }
 
-    // --- KNOCKBACK ENGINE
+    default void refundParryCooldown(float percentage) {
+        int currentCooldown = getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
+        long refundAmount = (long) (currentCooldown * percentage);
+        setParryTimestamp(getParryTimestamp() - refundAmount);
+    }
+
     default void applyParryKnockback(LivingEntity target, double strength, double x, double z) {
         if (Riposte.CONFIG.enforceKnockback) {
             target.velocityModified = true;

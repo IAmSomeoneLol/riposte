@@ -37,6 +37,36 @@
   "category.riposte.keys": "Riposte Mechanics",
   "key.riposte.parry": "Parry",
 
-  "riposte.client.parryCameraShake": "Parry Camera Shake",
-  "riposte.client.parryScreenFlash": "Parry Screen Flash"
+  "config.riposte.main": "Server Settings",
+  "config.riposte.client": "Client Settings",
+
+  "riposte.main.parrySettings": "Parry Settings",
+  "riposte.main.parryWindowMs": "Parry Window Ms",
+  "riposte.main.parryCooldownMs": "Parry Cooldown Ms",
+  "riposte.main.parryKnockback": "Parry Knockback",
+  "riposte.main.enforceKnockback": "Enforce Knockback",
+
+  "riposte.main.parryAdaptions": "Parry Adaptions",
+  "riposte.main.hitstop": "Hitstop",
+  "riposte.main.hitstopMs": "Hitstop Ms",
+  "riposte.main.deflectProjectiles": "Deflect Projectiles",
+  "riposte.main.kickCombo": "Kick Combo",
+  "riposte.main.kickComboKnockbackMultiplier": "Kick Combo Knockback Multiplier",
+  "riposte.main.kickComboWindowMs": "Kick Combo Window Ms",
+
+  "riposte.main.accessoriesConfig": "Accessories Configurations",
+  "riposte.main.ironPlateWindowBonusMs": "Iron Plate Window Bonus Ms",
+  "riposte.main.wanderersCapeCooldownCharge": "Wanderer's Cape Cooldown Charge",
+
+  "riposte.client.parryActivation": "Parry Activation",
+
+  "riposte.client.iconCooldown": "Icon Cooldown",
+  "riposte.client.iconMode": "Icon Mode",
+  "riposte.client.xOffset": "X Offset",
+  "riposte.client.yOffset": "Y Offset",
+  "riposte.client.iconScale": "Icon Scale",
+
+  "riposte.client.vfxSettings": "VFX Settings",
+  "riposte.client.cameraShake": "Camera Shake",
+  "riposte.client.screenFlash": "Screen Flash"
 }

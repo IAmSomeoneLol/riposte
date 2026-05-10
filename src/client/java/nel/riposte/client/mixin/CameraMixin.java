@@ -23,7 +23,7 @@ public abstract class CameraMixin {
 
     @Inject(method = "update", at = @At("TAIL"))
     private void riposte$cameraShake(CallbackInfo ci) {
-        if (!RiposteClient.CLIENT_CONFIG.parryCameraShake) return;
+        if (!RiposteClient.CLIENT_CONFIG.cameraShake) return;
 
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;

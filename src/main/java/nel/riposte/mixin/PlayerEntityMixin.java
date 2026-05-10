@@ -35,9 +35,6 @@ public class PlayerEntityMixin implements ParryData {
     @Unique
     private int lastParriedEntityId = -1;
 
-    @Unique
-    private float parryMeter = 0.0f;
-
     @Override
     public long getParryTimestamp() {
         return this.parryTimestamp;
@@ -66,16 +63,6 @@ public class PlayerEntityMixin implements ParryData {
     @Override
     public void setLastParriedEntityId(int id) {
         this.lastParriedEntityId = id;
-    }
-
-    @Override
-    public float getParryMeter() {
-        return this.parryMeter;
-    }
-
-    @Override
-    public void addParryMeter(float amount) {
-        this.parryMeter = Math.min(100.0f, this.parryMeter + amount);
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
@@ -131,7 +118,7 @@ public class PlayerEntityMixin implements ParryData {
 
                 var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
                 if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
-                    this.addParryMeter(25.0f); // 4 parries to hit 100% max charge
+                    this.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
                 }
 
                 if (player instanceof ServerPlayerEntity serverPlayer) {
@@ -143,16 +130,20 @@ public class PlayerEntityMixin implements ParryData {
 
     @Inject(method = "attack", at = @At("TAIL"))
     private void riposte$onAttack(Entity target, CallbackInfo ci) {
-        if (Riposte.CONFIG.comboParryEnabled && target instanceof LivingEntity livingTarget) {
+        if (Riposte.CONFIG.kickCombo && target instanceof LivingEntity livingTarget) {
             if (target.getId() == this.lastParriedEntityId) {
                 long timeSinceParry = System.currentTimeMillis() - this.successfulParryTimestamp;
 
-                if (timeSinceParry <= Riposte.CONFIG.comboParryWindowMs) {
+                if (timeSinceParry <= Riposte.CONFIG.kickComboWindowMs) {
                     PlayerEntity player = (PlayerEntity) (Object) this;
-                    double heavyKnockback = Riposte.CONFIG.parryKnockback * Riposte.CONFIG.comboParryMultiplier;
+                    double heavyKnockback = Riposte.CONFIG.parryKnockback * Riposte.CONFIG.kickComboKnockbackMultiplier;
 
                     this.applyParryKnockback(livingTarget, heavyKnockback, player.getX() - livingTarget.getX(), player.getZ() - livingTarget.getZ());
                     this.lastParriedEntityId = -1;
+
+                    if (player instanceof ServerPlayerEntity serverPlayer) {
+                        ServerPlayNetworking.send(serverPlayer, Riposte.COMBO_SUCCESS_PACKET, PacketByteBufs.create());
+                    }
                 }
             }
         }
