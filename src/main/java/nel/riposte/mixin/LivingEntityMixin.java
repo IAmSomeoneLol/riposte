@@ -26,6 +26,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -53,6 +54,39 @@ public abstract class LivingEntityMixin implements HitstopData {
         }
     }
 
+    // --- COBALT PLATE: INFINITE KNOCKBACK RESISTANCE ---
+    @Inject(method = "takeKnockback", at = @At("HEAD"), cancellable = true)
+    private void riposte$cobaltPlateKnockback(double strength, double x, double z, CallbackInfo ci) {
+        if ((Object) this instanceof PlayerEntity player) {
+            var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
+            if (capability != null && capability.isEquipped(Riposte.COBALT_PLATE)) {
+                ci.cancel();
+            }
+        }
+    }
+
+    // --- BLOODRING & WANDERER'S CAPE DAMAGE MULTIPLIERS ---
+    @ModifyVariable(method = "damage", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+    private float riposte$accessoryDamageModifiers(float amount, DamageSource source) {
+        float modifiedAmount = amount;
+
+        if (source.getAttacker() instanceof PlayerEntity attacker) {
+            var capability = io.wispforest.accessories.api.AccessoriesCapability.get(attacker);
+            if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
+                modifiedAmount *= 1.1f;
+            }
+        }
+
+        if ((Object) this instanceof PlayerEntity victim) {
+            var capability = io.wispforest.accessories.api.AccessoriesCapability.get(victim);
+            if (capability != null && capability.isEquipped(Riposte.EVERLASTING_BLOODRING)) {
+                modifiedAmount *= 1.5f;
+            }
+        }
+
+        return modifiedAmount;
+    }
+
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
     private void riposte$onDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof PlayerEntity player) {
@@ -63,7 +97,7 @@ public abstract class LivingEntityMixin implements HitstopData {
             int currentWindow = parryData.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
             if (parryData.isParryActive(currentWindow)) {
-                cir.setReturnValue(false); // Deny the damage
+                cir.setReturnValue(false);
 
                 if (source.isIn(DamageTypeTags.IS_PROJECTILE)) {
                     return;
@@ -71,17 +105,14 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                 Entity rawAttacker = source.getAttacker();
 
-                // --- MULTI-HIT DEBOUNCE (Slime/Lag Fix) ---
                 if (rawAttacker != null) {
                     long timeSinceLastParry = System.currentTimeMillis() - parryData.getSuccessfulParryTimestamp();
 
-                    // If we parried this exact entity within the current window, stay invulnerable but skip the FX
                     if (rawAttacker.getId() == parryData.getLastParriedEntityId() && timeSinceLastParry <= currentWindow) {
                         return;
                     }
                 }
 
-                // --- MELEE PARRY LOGIC ---
                 ItemStack mainHand = player.getMainHandStack();
                 Item item = mainHand.getItem();
                 boolean isWeapon = item instanceof SwordItem || item instanceof MiningToolItem || item instanceof TridentItem;
@@ -92,14 +123,20 @@ public abstract class LivingEntityMixin implements HitstopData {
                     player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 1.0f);
                 }
 
+                // CRITICAL FIX: The successful parry logic runs regardless of attacker presence (fixes Fall Damage VFX missing)
+                parryData.setSuccessfulParryTimestamp(System.currentTimeMillis());
+
+                if (player instanceof ServerPlayerEntity serverPlayer) {
+                    ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, PacketByteBufs.create());
+                }
+
+                var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
+                if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
+                    parryData.addParryMeter(25.0f);
+                }
+
                 if (rawAttacker instanceof LivingEntity attacker) {
-
-                    parryData.setSuccessfulParryTimestamp(System.currentTimeMillis());
                     parryData.setLastParriedEntityId(attacker.getId());
-
-                    if (player instanceof ServerPlayerEntity serverPlayer) {
-                        ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, PacketByteBufs.create());
-                    }
 
                     boolean isBoss = attacker instanceof WitherEntity ||
                             attacker instanceof EnderDragonEntity ||
@@ -118,6 +155,9 @@ public abstract class LivingEntityMixin implements HitstopData {
                         this.setHitstop(hitstopFrames);
                         ((HitstopData) attacker).setHitstop(hitstopFrames);
                     }
+                } else {
+                    // Reset the parry memory if we parried a non-entity like the ground
+                    parryData.setLastParriedEntityId(-1);
                 }
             }
         }

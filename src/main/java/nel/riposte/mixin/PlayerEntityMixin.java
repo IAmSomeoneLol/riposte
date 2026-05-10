@@ -35,6 +35,9 @@ public class PlayerEntityMixin implements ParryData {
     @Unique
     private int lastParriedEntityId = -1;
 
+    @Unique
+    private float parryMeter = 0.0f;
+
     @Override
     public long getParryTimestamp() {
         return this.parryTimestamp;
@@ -63,6 +66,16 @@ public class PlayerEntityMixin implements ParryData {
     @Override
     public void setLastParriedEntityId(int id) {
         this.lastParriedEntityId = id;
+    }
+
+    @Override
+    public float getParryMeter() {
+        return this.parryMeter;
+    }
+
+    @Override
+    public void addParryMeter(float amount) {
+        this.parryMeter = Math.min(100.0f, this.parryMeter + amount);
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
@@ -116,7 +129,11 @@ public class PlayerEntityMixin implements ParryData {
                 this.setSuccessfulParryTimestamp(System.currentTimeMillis());
                 this.setLastParriedEntityId(projectile.getId());
 
-                // Tell the client to shake the screen
+                var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
+                if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
+                    this.addParryMeter(25.0f); // 4 parries to hit 100% max charge
+                }
+
                 if (player instanceof ServerPlayerEntity serverPlayer) {
                     ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, PacketByteBufs.create());
                 }

@@ -19,6 +19,10 @@ public interface ParryData {
     int getLastParriedEntityId();
     void setLastParriedEntityId(int id);
 
+    // Wanderer's Cape Meter
+    float getParryMeter();
+    void addParryMeter(float amount);
+
     // Calculates if the current time falls within the active parry frames
     default boolean isParryActive(int windowMs) {
         long timeSinceParry = System.currentTimeMillis() - getParryTimestamp();
@@ -38,25 +42,25 @@ public interface ParryData {
         var capability = AccessoriesCapability.get(player);
         if (capability == null) return baseCooldownMs;
 
-        double rate = 1.0; // Base recharge rate
+        double rate = 1.0;
 
         if (capability.isEquipped(Riposte.IRON_PLATE)) rate += 3.0;
         if (capability.isEquipped(Riposte.CREST_OF_THE_VOID)) rate += 3.0;
         if (capability.isEquipped(Riposte.COBALT_PLATE)) rate += 5.0;
 
-        if (capability.isEquipped(Riposte.BRAIN_CHIP)) rate *= 2.0; // +100%
+        if (capability.isEquipped(Riposte.BRAIN_CHIP)) rate *= 2.0;
 
         return (int) (baseCooldownMs / rate);
     }
 
-    // hitstop
+    // Hitstop
     default int getCalculatedWindow(int baseWindowMs) {
         PlayerEntity player = (PlayerEntity) this;
         var capability = AccessoriesCapability.get(player);
         if (capability == null) return baseWindowMs;
 
         if (capability.isEquipped(Riposte.EVERLASTING_BLOODRING)) {
-            return baseWindowMs * 2; // +2x Window Length
+            return baseWindowMs * 2;
         }
         return baseWindowMs;
     }
@@ -67,17 +71,13 @@ public interface ParryData {
         var capability = AccessoriesCapability.get(player);
         if (capability == null) return false;
 
-        // Crest of the Void overrides everything: Parries ALL damage
         if (capability.isEquipped(Riposte.CREST_OF_THE_VOID)) return true;
 
-        // Leather Socks: Allows fall damage
         if (source.isOf(DamageTypes.FALL) && capability.isEquipped(Riposte.LEATHER_SOCK)) return true;
 
-        // Iron/Cobalt Plate: Allows projectiles (arrows, fireballs, etc
         boolean hasPlate = capability.isEquipped(Riposte.IRON_PLATE) || capability.isEquipped(Riposte.COBALT_PLATE);
         if (source.isIn(DamageTypeTags.IS_PROJECTILE) && hasPlate) return true;
 
-        // DEFAULT ENGINE: Only parry direct entity melee attacks.
         return source.getAttacker() instanceof LivingEntity && !source.isIn(DamageTypeTags.IS_PROJECTILE) && !source.isIndirect();
     }
 
