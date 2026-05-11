@@ -10,7 +10,14 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.MiningToolItem;
+import net.minecraft.item.SwordItem;
+import net.minecraft.item.TridentItem;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.Box;
@@ -125,6 +132,24 @@ public class PlayerEntityMixin implements ParryData {
                 projectile.velocityModified = true;
 
                 player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 1.0f);
+
+                if (player.getWorld() instanceof ServerWorld serverWorld) {
+                    // Find the midpoint floating between the player and the projectile
+                    double midX = (player.getX() + projectile.getX()) / 2.0;
+                    double midY = (player.getEyeY() + projectile.getY()) / 2.0;
+                    double midZ = (player.getZ() + projectile.getZ()) / 2.0;
+
+                    // Perfect 3D spherical spark burst using spark_0 through spark_7
+                    serverWorld.spawnParticles(ParticleTypes.FIREWORK, midX, midY, midZ, 15, 0.0, 0.0, 0.0, 0.15);
+
+                    ItemStack mainHand = player.getMainHandStack();
+                    Item item = mainHand.getItem();
+                    boolean isWeapon = item instanceof SwordItem || item instanceof MiningToolItem || item instanceof TridentItem;
+
+                    if (isWeapon) {
+                        serverWorld.spawnParticles(ParticleTypes.SWEEP_ATTACK, midX, midY, midZ, 1, 0, 0, 0, 0);
+                    }
+                }
 
                 this.setSuccessfulParryTimestamp(System.currentTimeMillis());
                 this.setLastParriedEntityId(projectile.getId());
