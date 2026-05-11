@@ -1,0 +1,30 @@
+{
+  "weapon_parry": {
+    "category": "player",
+    "sounds": [
+      "riposte:weapon_hit1",
+      "riposte:weapon_hit2",
+      "riposte:weapon_hit3"
+    ]
+  },
+  "normal_parry": {
+    "category": "player",
+    "sounds": [
+      "riposte:normal_hit1",
+      "riposte:normal_hit2",
+      "riposte:normal_hit3"
+    ]
+  },
+  "kick_combo": {
+    "category": "player",
+    "sounds": [
+      "riposte:kick_hit1"
+    ]
+  },
+  "lethal_parry": {
+    "category": "player",
+    "sounds": [
+      "riposte:heavy_hit1"
+    ]
+  }
+}

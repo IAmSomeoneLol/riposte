@@ -22,22 +22,23 @@ public abstract class CameraMixin {
     private final Random random = new Random();
 
     @Inject(method = "update", at = @At("TAIL"))
-    private void riposte$cameraShake(CallbackInfo ci) {
-        if (!RiposteClient.CLIENT_CONFIG.cameraShake) return;
-
+    private void riposte$cameraEffects(CallbackInfo ci) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
         ParryData data = (ParryData) client.player;
-        long timeSince = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
 
-        if (timeSince < RiposteClient.CLIENT_CONFIG.shakeDurationMs) {
-            float intensity = 1.0f - ((float) timeSince / RiposteClient.CLIENT_CONFIG.shakeDurationMs);
+        // Normal Camera Shake (Fixed config paths)
+        if (RiposteClient.CLIENT_CONFIG.cameraShake) {
+            long timeSince = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
+            if (timeSince < RiposteClient.CLIENT_CONFIG.shakeDurationMs) {
+                float intensity = 1.0f - ((float) timeSince / RiposteClient.CLIENT_CONFIG.shakeDurationMs);
 
-            float shakeX = (random.nextFloat() - 0.5f) * RiposteClient.CLIENT_CONFIG.shakeIntensity * intensity;
-            float shakeY = (random.nextFloat() - 0.5f) * RiposteClient.CLIENT_CONFIG.shakeIntensity * intensity;
+                float shakeX = (random.nextFloat() - 0.5f) * RiposteClient.CLIENT_CONFIG.shakeIntensity * intensity;
+                float shakeY = (random.nextFloat() - 0.5f) * RiposteClient.CLIENT_CONFIG.shakeIntensity * intensity;
 
-            this.setRotation(this.yaw + shakeX, this.pitch + shakeY);
+                this.setRotation(this.yaw + shakeX, this.pitch + shakeY);
+            }
         }
     }
 }

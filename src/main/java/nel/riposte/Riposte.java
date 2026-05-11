@@ -17,6 +17,7 @@ import net.minecraft.item.ItemGroups;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,18 @@ public class Riposte implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	public static RiposteConfig CONFIG;
+
+	public static final Identifier WEAPON_PARRY_ID = new Identifier(MOD_ID, "weapon_parry");
+	public static final SoundEvent WEAPON_PARRY_SOUND = SoundEvent.of(WEAPON_PARRY_ID);
+
+	public static final Identifier NORMAL_PARRY_ID = new Identifier(MOD_ID, "normal_parry");
+	public static final SoundEvent NORMAL_PARRY_SOUND = SoundEvent.of(NORMAL_PARRY_ID);
+
+	public static final Identifier KICK_COMBO_ID = new Identifier(MOD_ID, "kick_combo");
+	public static final SoundEvent KICK_COMBO_SOUND = SoundEvent.of(KICK_COMBO_ID);
+
+	public static final Identifier LETHAL_PARRY_ID = new Identifier(MOD_ID, "lethal_parry");
+	public static final SoundEvent LETHAL_PARRY_SOUND = SoundEvent.of(LETHAL_PARRY_ID);
 
 	public static final Item IRON_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
 			"tooltip.riposte.passive", "tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3");
@@ -45,7 +58,6 @@ public class Riposte implements ModInitializer {
 	public static final Item WANDERERS_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "necklace",
 			"tooltip.riposte.passive.charge_meter", "tooltip.riposte.passive.damage_dealt");
 
-	// Moved from "hat" to "head"
 	public static final Item BRAIN_CHIP = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "head",
 			"tooltip.riposte.modifier.recharge_rate_100");
 
@@ -55,11 +67,18 @@ public class Riposte implements ModInitializer {
 	public static final Identifier PARRY_SYNC_PACKET = new Identifier(MOD_ID, "parry_sync");
 	public static final Identifier PARRY_SUCCESS_PACKET = new Identifier(MOD_ID, "parry_success");
 	public static final Identifier COMBO_SUCCESS_PACKET = new Identifier(MOD_ID, "combo_success");
+	public static final Identifier PARRY_VFX_PACKET = new Identifier(MOD_ID, "parry_vfx");
+	public static final Identifier LETHAL_VFX_PACKET = new Identifier(MOD_ID, "lethal_vfx");
 
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Initializing Riposte Parry Mechanics...");
 		CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteConfig::new);
+
+		Registry.register(Registries.SOUND_EVENT, WEAPON_PARRY_ID, WEAPON_PARRY_SOUND);
+		Registry.register(Registries.SOUND_EVENT, NORMAL_PARRY_ID, NORMAL_PARRY_SOUND);
+		Registry.register(Registries.SOUND_EVENT, KICK_COMBO_ID, KICK_COMBO_SOUND);
+		Registry.register(Registries.SOUND_EVENT, LETHAL_PARRY_ID, LETHAL_PARRY_SOUND);
 
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "iron_plate"), IRON_PLATE);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "leather_sock"), LEATHER_SOCK);

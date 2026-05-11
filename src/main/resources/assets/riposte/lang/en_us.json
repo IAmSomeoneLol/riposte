@@ -71,7 +71,12 @@
   "riposte.client.shakeIntensity": "Shake Intensity",
   "riposte.client.shakeDurationMs": "Shake Duration Ms",
 
+  "riposte.client.particleConfig": "Particle Configuration",
+  "riposte.client.particleNormal": "Particle Normal",
+  "riposte.client.particleHeavy": "Particle Heavy",
+
   "accessories.slot.riposte.head": "Head",
+  "riposte.client.lethalParryShader": "Lethal Parry Shader",
 
   "riposte.client.flashScreen": "Flash Screen",
   "riposte.client.screenFlash": "Screen Flash",

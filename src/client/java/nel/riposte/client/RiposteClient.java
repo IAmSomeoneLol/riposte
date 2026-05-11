@@ -9,6 +9,7 @@ import me.fzzyhmstrs.fzzy_config.api.RegisterType;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
 import nel.riposte.client.config.RiposteClientConfig;
+import nel.riposte.client.mixin.GameRendererInvoker;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -24,6 +25,7 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
@@ -33,11 +35,17 @@ import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 
+import java.util.Random;
+
 public class RiposteClient implements ClientModInitializer {
 
 	private static KeyBinding parryKey;
 	public static RiposteClientConfig CLIENT_CONFIG;
 	private static final Identifier PARRY_ICON = new Identifier(Riposte.MOD_ID, "textures/gui/cooldown_parry.png");
+	private final Random random = new Random();
+
+	public static long lastLethalParryTimestamp = 0L;
+	public static boolean shaderActive = false;
 
 	@Override
 	public void onInitializeClient() {
@@ -67,6 +75,51 @@ public class RiposteClient implements ClientModInitializer {
 		AccessoriesRendererRegistry.registerRenderer(Riposte.BRAIN_CHIP, () -> emptyRenderer);
 		AccessoriesRendererRegistry.registerRenderer(Riposte.ENDER_DRAGON_SCALE, () -> emptyRenderer);
 
+		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_VFX_PACKET, (client, handler, buf, responseSender) -> {
+			double px = buf.readDouble();
+			double py = buf.readDouble();
+			double pz = buf.readDouble();
+			float yaw = buf.readFloat();
+			boolean isWeapon = buf.readBoolean();
+
+			client.execute(() -> {
+				if (client.world == null) return;
+
+				if (CLIENT_CONFIG.particleNormal) {
+					for (int i = 0; i < 15; i++) {
+						double vx = random.nextGaussian() * 0.15;
+						double vy = random.nextGaussian() * 0.15;
+						double vz = random.nextGaussian() * 0.15;
+
+						client.world.addParticle(ParticleTypes.FIREWORK, px, py, pz, vx, vy, vz);
+					}
+				}
+
+				if (isWeapon && CLIENT_CONFIG.particleHeavy) {
+					for (int i = 0; i < 15; i++) {
+						double vx = (random.nextDouble() - 0.5) * 0.5;
+						double vy = random.nextDouble() * 0.5;
+						double vz = (random.nextDouble() - 0.5) * 0.5;
+
+						client.world.addParticle(ParticleTypes.SOUL_FIRE_FLAME, px, py, pz, vx, vy, vz);
+						client.world.addParticle(ParticleTypes.ELECTRIC_SPARK, px, py, pz, vx, vy, vz);
+					}
+				}
+			});
+		});
+
+		ClientPlayNetworking.registerGlobalReceiver(Riposte.LETHAL_VFX_PACKET, (client, handler, buf, responseSender) -> {
+			client.execute(() -> {
+				lastLethalParryTimestamp = System.currentTimeMillis();
+
+				if (CLIENT_CONFIG.lethalParryShader && client.gameRenderer != null) {
+					// Uses our new Invoker Mixin to bypass access limits!
+					((GameRendererInvoker) client.gameRenderer).invokeLoadPostProcessor(new Identifier(Riposte.MOD_ID, "shaders/post/lethal_parry.json"));
+					shaderActive = true;
+				}
+			});
+		});
+
 		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_SUCCESS_PACKET, (client, handler, buf, responseSender) -> {
 			client.execute(() -> {
 				if (client.player != null) {
@@ -75,7 +128,6 @@ public class RiposteClient implements ClientModInitializer {
 
 					var capability = io.wispforest.accessories.api.AccessoriesCapability.get(client.player);
 					if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
-						// Flattened reference here
 						data.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
 					}
 				}
@@ -102,6 +154,15 @@ public class RiposteClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (shaderActive) {
+				if (!CLIENT_CONFIG.lethalParryShader || System.currentTimeMillis() - lastLethalParryTimestamp > 400) {
+					if (client.gameRenderer != null) {
+						client.gameRenderer.disablePostProcessor();
+					}
+					shaderActive = false;
+				}
+			}
+
 			while (parryKey.wasPressed()) {
 				if (CLIENT_CONFIG.parryActivation == RiposteClientConfig.ExecutionMode.KEYBIND) {
 					attemptParry(client);
@@ -142,7 +203,6 @@ public class RiposteClient implements ClientModInitializer {
 			}
 
 			long timeSinceParry = System.currentTimeMillis() - data.getParryTimestamp();
-			// Flattened reference here
 			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (CLIENT_CONFIG.iconMode == RiposteClientConfig.IconMode.DYNAMIC) {
@@ -178,7 +238,6 @@ public class RiposteClient implements ClientModInitializer {
 		if (client.player != null) {
 			ParryData data = (ParryData) client.player;
 
-			// Flattened reference here
 			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (data.canParry(currentCooldown)) {

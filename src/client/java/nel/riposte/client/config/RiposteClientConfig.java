@@ -38,12 +38,18 @@ public class RiposteClientConfig extends Config {
     public ConfigGroup cameraControlGroup = new ConfigGroup("cameraControl");
     public boolean cameraShake = true;
     public float shakeIntensity = 4.0f;
-    @ConfigGroup.Pop
     public int shakeDurationMs = 200;
+    @ConfigGroup.Pop
+    public boolean lethalParryShader = true; // REVERTED: Now controls the actual shader!
 
     public ConfigGroup flashScreenGroup = new ConfigGroup("flashScreen");
     public boolean screenFlash = true;
     public FlashType screenFlashType = FlashType.WHITE;
     @ConfigGroup.Pop
     public int screenFlashDurationMs = 150;
+
+    public ConfigGroup particleConfigGroup = new ConfigGroup("particleConfig");
+    public boolean particleNormal = true;
+    @ConfigGroup.Pop
+    public boolean particleHeavy = true;
 }

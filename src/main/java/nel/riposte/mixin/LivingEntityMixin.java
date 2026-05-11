@@ -5,6 +5,7 @@ import nel.riposte.ParryData;
 import nel.riposte.Riposte;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
@@ -18,12 +19,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.MiningToolItem;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.TridentItem;
-import net.minecraft.particle.ParticleTypes;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -118,35 +118,50 @@ public abstract class LivingEntityMixin implements HitstopData {
                 Item item = mainHand.getItem();
                 boolean isWeapon = item instanceof SwordItem || item instanceof MiningToolItem || item instanceof TridentItem;
 
-                if (isWeapon) {
-                    player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.BLOCK_ANVIL_PLACE, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                } else {
-                    player.getWorld().playSound(null, player.getBlockPos(), SoundEvents.ITEM_SHIELD_BLOCK, SoundCategory.PLAYERS, 1.0f, 1.0f);
-                }
+                // NEW: Calculate if this was a lethal hit!
+                boolean isLethal = amount >= player.getHealth();
 
-                if (player.getWorld() instanceof ServerWorld serverWorld) {
+                float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
+                SoundEvent soundToPlay = isLethal ? Riposte.LETHAL_PARRY_SOUND : (isWeapon ? Riposte.WEAPON_PARRY_SOUND : Riposte.NORMAL_PARRY_SOUND);
+
+                player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
+
+                if (!player.getWorld().isClient) {
                     double midX, midY, midZ;
 
-                    // Calculate the exact 3D midpoint between the player and the attacker
                     if (rawAttacker != null) {
                         midX = (player.getX() + rawAttacker.getX()) / 2.0;
                         midY = (player.getEyeY() + (rawAttacker.getY() + rawAttacker.getHeight() / 2.0)) / 2.0;
                         midZ = (player.getZ() + rawAttacker.getZ()) / 2.0;
                     } else {
-                        // Fallback: Just spawn it 1 block in front of the player's face
                         Vec3d look = player.getRotationVector();
                         midX = player.getX() + look.x;
                         midY = player.getEyeY() + look.y;
                         midZ = player.getZ() + look.z;
                     }
 
-                    // Setting delta to 0.0 with speed 0.15 makes them explode outwards in a perfect 3D sphere
-                    // FIREWORK uses the exact spark_0 through spark_7 texture animation!
-                    serverWorld.spawnParticles(ParticleTypes.FIREWORK, midX, midY, midZ, 15, 0.0, 0.0, 0.0, 0.15);
+                    for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
+                        PacketByteBuf buf = PacketByteBufs.create();
+                        buf.writeDouble(midX);
+                        buf.writeDouble(midY);
+                        buf.writeDouble(midZ);
+                        buf.writeFloat(player.getYaw());
+                        buf.writeBoolean(isWeapon);
+                        ServerPlayNetworking.send(tracker, Riposte.PARRY_VFX_PACKET, buf);
+                    }
+                    if (player instanceof ServerPlayerEntity serverPlayer) {
+                        PacketByteBuf buf = PacketByteBufs.create();
+                        buf.writeDouble(midX);
+                        buf.writeDouble(midY);
+                        buf.writeDouble(midZ);
+                        buf.writeFloat(player.getYaw());
+                        buf.writeBoolean(isWeapon);
+                        ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_VFX_PACKET, buf);
 
-                    // Only spawns the horizontal sweep slash if holding a weapon
-                    if (isWeapon) {
-                        serverWorld.spawnParticles(ParticleTypes.SWEEP_ATTACK, midX, midY, midZ, 1, 0, 0, 0, 0);
+                        // NEW: Send Lethal Visuals to the defending player!
+                        if (isLethal) {
+                            ServerPlayNetworking.send(serverPlayer, Riposte.LETHAL_VFX_PACKET, PacketByteBufs.create());
+                        }
                     }
                 }
 
