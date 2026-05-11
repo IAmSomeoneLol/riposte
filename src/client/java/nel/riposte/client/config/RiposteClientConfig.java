@@ -36,11 +36,26 @@ public class RiposteClientConfig extends Config {
     public float iconScale = 1.0f;
 
     public ConfigGroup cameraControlGroup = new ConfigGroup("cameraControl");
+
+    // RESTORED: Camera Shake Settings
     public boolean cameraShake = true;
     public float shakeIntensity = 4.0f;
     public int shakeDurationMs = 200;
+
+    // Camera Recoil Settings
+    public boolean cameraRecoil = true;
+    public float recoilIntensity = 4.0f;
+    public int recoilDurationMs = 300;
+
+    // FOV Settings
+    public boolean fovChange = true;
+    public double fovZoom = 20.0;
+    public int fovDurationMs = 300;
+
+    // Shader Settings
+    public boolean lethalParryShader = true;
     @ConfigGroup.Pop
-    public boolean lethalParryShader = true; // REVERTED: Now controls the actual shader!
+    public int lethalShaderDurationMs = 200;
 
     public ConfigGroup flashScreenGroup = new ConfigGroup("flashScreen");
     public boolean screenFlash = true;

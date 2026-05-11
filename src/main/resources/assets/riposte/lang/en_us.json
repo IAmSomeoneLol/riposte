@@ -75,6 +75,15 @@
   "riposte.client.particleNormal": "Particle Normal",
   "riposte.client.particleHeavy": "Particle Heavy",
 
+  "riposte.client.cameraRecoil": "Camera Recoil",
+  "riposte.client.recoilIntensity": "Recoil Intensity",
+  "riposte.client.recoilDurationMs": "Recoil Duration (ms)",
+  "riposte.client.fovChange": "FOV Change",
+  "riposte.client.fovZoom": "FOV Zoom Out",
+  "riposte.client.fovDurationMs": "FOV Duration (ms)",
+
+  "riposte.client.lethalShaderDurationMs": "Lethal Shader Duration (ms)",
+
   "accessories.slot.riposte.head": "Head",
   "riposte.client.lethalParryShader": "Lethal Parry Shader",
 

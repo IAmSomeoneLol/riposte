@@ -25,6 +25,9 @@ import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.SwordItem;
+import net.minecraft.item.MiningToolItem;
+import net.minecraft.item.TridentItem;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
@@ -33,6 +36,7 @@ import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
 import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
+import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationFactory;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 
 import java.util.Random;
@@ -42,10 +46,13 @@ public class RiposteClient implements ClientModInitializer {
 	private static KeyBinding parryKey;
 	public static RiposteClientConfig CLIENT_CONFIG;
 	private static final Identifier PARRY_ICON = new Identifier(Riposte.MOD_ID, "textures/gui/cooldown_parry.png");
-	private final Random random = new Random();
+	private static final Random random = new Random();
 
 	public static long lastLethalParryTimestamp = 0L;
 	public static boolean shaderActive = false;
+
+	public static float recoilDirX = 0f;
+	public static float recoilDirY = 0f;
 
 	@Override
 	public void onInitializeClient() {
@@ -57,6 +64,12 @@ public class RiposteClient implements ClientModInitializer {
 				GLFW.GLFW_KEY_R,
 				"category.riposte.keys"
 		));
+
+		PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(
+				new Identifier(Riposte.MOD_ID, "animation"),
+				42,
+				(AbstractClientPlayerEntity player) -> new ModifierLayer<>()
+		);
 
 		SimpleAccessoryRenderer emptyRenderer = new SimpleAccessoryRenderer() {
 			@Override
@@ -90,7 +103,6 @@ public class RiposteClient implements ClientModInitializer {
 						double vx = random.nextGaussian() * 0.15;
 						double vy = random.nextGaussian() * 0.15;
 						double vz = random.nextGaussian() * 0.15;
-
 						client.world.addParticle(ParticleTypes.FIREWORK, px, py, pz, vx, vy, vz);
 					}
 				}
@@ -100,7 +112,6 @@ public class RiposteClient implements ClientModInitializer {
 						double vx = (random.nextDouble() - 0.5) * 0.5;
 						double vy = random.nextDouble() * 0.5;
 						double vz = (random.nextDouble() - 0.5) * 0.5;
-
 						client.world.addParticle(ParticleTypes.SOUL_FIRE_FLAME, px, py, pz, vx, vy, vz);
 						client.world.addParticle(ParticleTypes.ELECTRIC_SPARK, px, py, pz, vx, vy, vz);
 					}
@@ -113,7 +124,6 @@ public class RiposteClient implements ClientModInitializer {
 				lastLethalParryTimestamp = System.currentTimeMillis();
 
 				if (CLIENT_CONFIG.lethalParryShader && client.gameRenderer != null) {
-					// Uses our new Invoker Mixin to bypass access limits!
 					((GameRendererInvoker) client.gameRenderer).invokeLoadPostProcessor(new Identifier(Riposte.MOD_ID, "shaders/post/lethal_parry.json"));
 					shaderActive = true;
 				}
@@ -125,6 +135,11 @@ public class RiposteClient implements ClientModInitializer {
 				if (client.player != null) {
 					ParryData data = (ParryData) client.player;
 					data.setSuccessfulParryTimestamp(System.currentTimeMillis());
+
+					recoilDirX = (random.nextFloat() - 0.5f) * 2.0f;
+					recoilDirY = (random.nextFloat() * 1.2f) - 1.0f;
+					float length = (float) Math.sqrt(recoilDirX * recoilDirX + recoilDirY * recoilDirY);
+					if (length > 0) { recoilDirX /= length; recoilDirY /= length; }
 
 					var capability = io.wispforest.accessories.api.AccessoriesCapability.get(client.player);
 					if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
@@ -140,7 +155,7 @@ public class RiposteClient implements ClientModInitializer {
 					ParryData data = (ParryData) client.player;
 					data.setSuccessfulComboTimestamp(System.currentTimeMillis());
 
-					var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, "combo_kick"));
+					var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, "kick_hit"));
 					if (animation != null) {
 						ModifierLayer<dev.kosmx.playerAnim.api.layered.IAnimation> animationContainer =
 								(ModifierLayer<dev.kosmx.playerAnim.api.layered.IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
@@ -155,7 +170,7 @@ public class RiposteClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (shaderActive) {
-				if (!CLIENT_CONFIG.lethalParryShader || System.currentTimeMillis() - lastLethalParryTimestamp > 400) {
+				if (!CLIENT_CONFIG.lethalParryShader || System.currentTimeMillis() - lastLethalParryTimestamp > CLIENT_CONFIG.lethalShaderDurationMs) {
 					if (client.gameRenderer != null) {
 						client.gameRenderer.disablePostProcessor();
 					}
@@ -168,16 +183,6 @@ public class RiposteClient implements ClientModInitializer {
 					attemptParry(client);
 				}
 			}
-		});
-
-		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
-			if (world.isClient && CLIENT_CONFIG.parryActivation == RiposteClientConfig.ExecutionMode.CAMERA) {
-				MinecraftClient client = MinecraftClient.getInstance();
-				if (attemptParry(client)) {
-					return ActionResult.CONSUME;
-				}
-			}
-			return ActionResult.PASS;
 		});
 
 		HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
@@ -237,12 +242,27 @@ public class RiposteClient implements ClientModInitializer {
 	private boolean attemptParry(MinecraftClient client) {
 		if (client.player != null) {
 			ParryData data = (ParryData) client.player;
-
 			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (data.canParry(currentCooldown)) {
 				data.setParryTimestamp(System.currentTimeMillis());
 				ClientPlayNetworking.send(Riposte.PARRY_SYNC_PACKET, PacketByteBufs.create());
+
+				ItemStack stack = client.player.getMainHandStack();
+				boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
+
+				String animName = isWeapon ? "parry_weapon" : "parry_fist";
+				var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
+
+				if (animation != null) {
+					var animationContainer = (ModifierLayer<dev.kosmx.playerAnim.api.layered.IAnimation>)
+							PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
+
+					if (animationContainer != null) {
+						animationContainer.setAnimation(new KeyframeAnimationPlayer(animation));
+					}
+				}
+
 				return true;
 			}
 		}

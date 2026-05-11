@@ -4,7 +4,7 @@
   ],
   "passes": [
     {
-      "name": "desaturate",
+      "name": "lethal_outline",
       "intarget": "minecraft:main",
       "outtarget": "swap"
     },
