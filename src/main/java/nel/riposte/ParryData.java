@@ -14,6 +14,10 @@ public interface ParryData {
 
     long getSuccessfulParryTimestamp();
     void setSuccessfulParryTimestamp(long timestamp);
+
+    long getSuccessfulComboTimestamp();
+    void setSuccessfulComboTimestamp(long timestamp);
+
     int getLastParriedEntityId();
     void setLastParriedEntityId(int id);
 
@@ -78,12 +82,14 @@ public interface ParryData {
     }
 
     default void refundParryCooldown(float percentage) {
+        // Flattened reference here
         int currentCooldown = getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
         long refundAmount = (long) (currentCooldown * percentage);
         setParryTimestamp(getParryTimestamp() - refundAmount);
     }
 
     default void applyParryKnockback(LivingEntity target, double strength, double x, double z) {
+        // Flattened reference here
         if (Riposte.CONFIG.enforceKnockback) {
             target.velocityModified = true;
 

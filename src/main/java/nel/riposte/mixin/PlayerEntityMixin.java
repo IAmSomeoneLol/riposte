@@ -33,6 +33,9 @@ public class PlayerEntityMixin implements ParryData {
     private long successfulParryTimestamp = 0L;
 
     @Unique
+    private long successfulComboTimestamp = 0L;
+
+    @Unique
     private int lastParriedEntityId = -1;
 
     @Override
@@ -53,6 +56,16 @@ public class PlayerEntityMixin implements ParryData {
     @Override
     public void setSuccessfulParryTimestamp(long timestamp) {
         this.successfulParryTimestamp = timestamp;
+    }
+
+    @Override
+    public long getSuccessfulComboTimestamp() {
+        return this.successfulComboTimestamp;
+    }
+
+    @Override
+    public void setSuccessfulComboTimestamp(long timestamp) {
+        this.successfulComboTimestamp = timestamp;
     }
 
     @Override

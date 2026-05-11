@@ -31,11 +31,11 @@ public abstract class CameraMixin {
         ParryData data = (ParryData) client.player;
         long timeSince = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
 
-        if (timeSince < 200) {
-            float intensity = 1.0f - ((float) timeSince / 200.0f);
+        if (timeSince < RiposteClient.CLIENT_CONFIG.shakeDurationMs) {
+            float intensity = 1.0f - ((float) timeSince / RiposteClient.CLIENT_CONFIG.shakeDurationMs);
 
-            float shakeX = (random.nextFloat() - 0.5f) * 4.0f * intensity;
-            float shakeY = (random.nextFloat() - 0.5f) * 4.0f * intensity;
+            float shakeX = (random.nextFloat() - 0.5f) * RiposteClient.CLIENT_CONFIG.shakeIntensity * intensity;
+            float shakeY = (random.nextFloat() - 0.5f) * RiposteClient.CLIENT_CONFIG.shakeIntensity * intensity;
 
             this.setRotation(this.yaw + shakeX, this.pitch + shakeY);
         }

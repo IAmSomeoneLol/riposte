@@ -66,7 +66,15 @@
   "riposte.client.yOffset": "Y Offset",
   "riposte.client.iconScale": "Icon Scale",
 
-  "riposte.client.vfxSettings": "VFX Settings",
+  "riposte.client.cameraControl": "Camera Control",
   "riposte.client.cameraShake": "Camera Shake",
-  "riposte.client.screenFlash": "Screen Flash"
+  "riposte.client.shakeIntensity": "Shake Intensity",
+  "riposte.client.shakeDurationMs": "Shake Duration Ms",
+
+  "accessories.slot.riposte.head": "Head",
+
+  "riposte.client.flashScreen": "Flash Screen",
+  "riposte.client.screenFlash": "Screen Flash",
+  "riposte.client.screenFlashType": "Screen Flash Type",
+  "riposte.client.screenFlashDurationMs": "Screen Flash Duration Ms"
 }

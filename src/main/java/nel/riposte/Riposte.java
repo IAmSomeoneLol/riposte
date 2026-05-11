@@ -1,13 +1,20 @@
 package nel.riposte;
 
+import io.wispforest.accessories.api.AccessoriesAPI;
+import io.wispforest.accessories.api.Accessory;
+import io.wispforest.accessories.api.attributes.AccessoryAttributeBuilder;
+import io.wispforest.accessories.api.attributes.SlotAttribute;
+import io.wispforest.accessories.api.slot.SlotReference;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
 import nel.riposte.config.RiposteConfig;
 import nel.riposte.item.RiposteAccessoryItem;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
+import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
@@ -38,7 +45,8 @@ public class Riposte implements ModInitializer {
 	public static final Item WANDERERS_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "necklace",
 			"tooltip.riposte.passive.charge_meter", "tooltip.riposte.passive.damage_dealt");
 
-	public static final Item BRAIN_CHIP = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "hat",
+	// Moved from "hat" to "head"
+	public static final Item BRAIN_CHIP = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "head",
 			"tooltip.riposte.modifier.recharge_rate_100");
 
 	public static final Item ENDER_DRAGON_SCALE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "charm",
@@ -82,6 +90,18 @@ public class Riposte implements ModInitializer {
 					}
 				}
 			});
+		});
+
+		AccessoriesAPI.registerAccessory(ENDER_DRAGON_SCALE, new Accessory() {
+			@Override
+			public void getDynamicModifiers(ItemStack stack, SlotReference reference, AccessoryAttributeBuilder builder) {
+				builder.addExclusive(
+						SlotAttribute.getSlotAttribute("riposte:head"),
+						new Identifier(MOD_ID, "dragon_scale_head_slot"),
+						1.0,
+						EntityAttributeModifier.Operation.ADDITION
+				);
+			}
 		});
 	}
 }

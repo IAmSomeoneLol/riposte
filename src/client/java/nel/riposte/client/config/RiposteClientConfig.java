@@ -21,6 +21,11 @@ public class RiposteClientConfig extends Config {
         DYNAMIC
     }
 
+    public enum FlashType {
+        WHITE,
+        BLACK
+    }
+
     public ExecutionMode parryActivation = ExecutionMode.KEYBIND;
 
     public ConfigGroup iconCooldownGroup = new ConfigGroup("iconCooldown");
@@ -30,8 +35,15 @@ public class RiposteClientConfig extends Config {
     @ConfigGroup.Pop
     public float iconScale = 1.0f;
 
-    public ConfigGroup vfxSettingsGroup = new ConfigGroup("vfxSettings");
+    public ConfigGroup cameraControlGroup = new ConfigGroup("cameraControl");
     public boolean cameraShake = true;
+    public float shakeIntensity = 4.0f;
     @ConfigGroup.Pop
+    public int shakeDurationMs = 200;
+
+    public ConfigGroup flashScreenGroup = new ConfigGroup("flashScreen");
     public boolean screenFlash = true;
+    public FlashType screenFlashType = FlashType.WHITE;
+    @ConfigGroup.Pop
+    public int screenFlashDurationMs = 150;
 }

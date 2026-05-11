@@ -5,6 +5,7 @@ import io.wispforest.accessories.api.client.AccessoriesRendererRegistry;
 import io.wispforest.accessories.api.client.SimpleAccessoryRenderer;
 import io.wispforest.accessories.api.slot.SlotReference;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
+import me.fzzyhmstrs.fzzy_config.api.RegisterType;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
 import nel.riposte.client.config.RiposteClientConfig;
@@ -40,7 +41,7 @@ public class RiposteClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new);
+		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new, RegisterType.CLIENT);
 
 		parryKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.riposte.parry",
@@ -74,6 +75,7 @@ public class RiposteClient implements ClientModInitializer {
 
 					var capability = io.wispforest.accessories.api.AccessoriesCapability.get(client.player);
 					if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
+						// Flattened reference here
 						data.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
 					}
 				}
@@ -83,6 +85,9 @@ public class RiposteClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(Riposte.COMBO_SUCCESS_PACKET, (client, handler, buf, responseSender) -> {
 			client.execute(() -> {
 				if (client.player != null) {
+					ParryData data = (ParryData) client.player;
+					data.setSuccessfulComboTimestamp(System.currentTimeMillis());
+
 					var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, "combo_kick"));
 					if (animation != null) {
 						ModifierLayer<dev.kosmx.playerAnim.api.layered.IAnimation> animationContainer =
@@ -123,10 +128,13 @@ public class RiposteClient implements ClientModInitializer {
 			int screenHeight = client.getWindow().getScaledHeight();
 
 			long timeSinceSuccess = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
+			long timeSinceCombo = System.currentTimeMillis() - data.getSuccessfulComboTimestamp();
+			long timeSinceFlash = Math.min(timeSinceSuccess, timeSinceCombo);
 
-			if (CLIENT_CONFIG.screenFlash && timeSinceSuccess < 150) {
-				float alpha = 1.0f - ((float) timeSinceSuccess / 150.0f);
-				int color = ((int) (alpha * 100) << 24) | 0xFFFFFF;
+			if (CLIENT_CONFIG.screenFlash && timeSinceFlash < CLIENT_CONFIG.screenFlashDurationMs) {
+				float alpha = 1.0f - ((float) timeSinceFlash / CLIENT_CONFIG.screenFlashDurationMs);
+				int rgb = CLIENT_CONFIG.screenFlashType == RiposteClientConfig.FlashType.WHITE ? 0xFFFFFF : 0x000000;
+				int color = ((int) (alpha * 100) << 24) | rgb;
 
 				RenderSystem.enableBlend();
 				drawContext.fill(0, 0, screenWidth, screenHeight, color);
@@ -134,6 +142,7 @@ public class RiposteClient implements ClientModInitializer {
 			}
 
 			long timeSinceParry = System.currentTimeMillis() - data.getParryTimestamp();
+			// Flattened reference here
 			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (CLIENT_CONFIG.iconMode == RiposteClientConfig.IconMode.DYNAMIC) {
@@ -169,6 +178,7 @@ public class RiposteClient implements ClientModInitializer {
 		if (client.player != null) {
 			ParryData data = (ParryData) client.player;
 
+			// Flattened reference here
 			int currentCooldown = data.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
 
 			if (data.canParry(currentCooldown)) {
