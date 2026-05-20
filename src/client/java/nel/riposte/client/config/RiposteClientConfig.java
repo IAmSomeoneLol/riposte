@@ -26,39 +26,44 @@ public class RiposteClientConfig extends Config {
         BLACK
     }
 
+    // --- NEW: 9-Point HUD Anchor System ---
+    public enum AnchorPoint {
+        TOP_LEFT, TOP_CENTER, TOP_RIGHT,
+        CENTER_LEFT, CENTER, CENTER_RIGHT,
+        BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT
+    }
+
     public ExecutionMode parryActivation = ExecutionMode.KEYBIND;
 
     public ConfigGroup iconCooldownGroup = new ConfigGroup("iconCooldown");
+    public AnchorPoint iconAnchor = AnchorPoint.CENTER; // The new anchor setting!
     public IconMode iconMode = IconMode.STATIC;
     public int xOffset = 0;
     public int yOffset = 20;
-    @ConfigGroup.Pop
     public float iconScale = 1.0f;
+    @ConfigGroup.Pop
     public boolean playCooldownSound = true;
 
     public ConfigGroup cameraControlGroup = new ConfigGroup("cameraControl");
-
-    // RESTORED: Camera Shake Settings
     public boolean cameraShake = true;
     public float shakeIntensity = 4.0f;
-    public int shakeDurationMs = 200;
-    public float cameraShakeIntensity = 1.0f; // Rotational snap (Pitch/Yaw)
-    public float cameraWalkAmplitude = 0.5f;  // Translational drift (X/Y axis)
-    public float cameraPushback = 0.8f;       // Physical shove backward (Z axis)
+    public float cameraWalkAmplitude = 0.5f;
+    @ConfigGroup.Pop
+    public float cameraPushback = 0.8f;
 
-    // Camera Recoil Settings
+    public ConfigGroup cameraRecoilGroup = new ConfigGroup("cameraRecoil");
     public boolean cameraRecoil = true;
     public float recoilIntensity = 4.0f;
+    @ConfigGroup.Pop
     public int recoilDurationMs = 300;
 
-    // FOV Settings
+    public ConfigGroup fovSettingsGroup = new ConfigGroup("fovSettings");
     public boolean fovChange = true;
     public double fovZoom = 20.0;
+    @ConfigGroup.Pop
     public int fovDurationMs = 300;
 
-    // Shader Settings
     public boolean lethalParryShader = true;
-    @ConfigGroup.Pop
     public int lethalShaderDurationMs = 200;
 
     public ConfigGroup flashScreenGroup = new ConfigGroup("flashScreen");

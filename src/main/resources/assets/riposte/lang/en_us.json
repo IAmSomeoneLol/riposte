@@ -61,15 +61,18 @@
   "riposte.client.parryActivation": "Parry Activation",
 
   "riposte.client.iconCooldown": "Icon Cooldown",
+  "riposte.client.iconAnchor": "Icon Anchor Point",
   "riposte.client.iconMode": "Icon Mode",
   "riposte.client.xOffset": "X Offset",
   "riposte.client.yOffset": "Y Offset",
   "riposte.client.iconScale": "Icon Scale",
+  "riposte.client.playCooldownSound": "Play Cooldown Sound",
 
   "riposte.client.cameraControl": "Camera Control",
   "riposte.client.cameraShake": "Camera Shake",
   "riposte.client.shakeIntensity": "Shake Intensity",
-  "riposte.client.shakeDurationMs": "Shake Duration Ms",
+  "riposte.client.cameraWalkAmplitude": "Camera Walk Amplitude",
+  "riposte.client.cameraPushback": "Camera Pushback",
 
   "riposte.client.particleConfig": "Particle Configuration",
   "riposte.client.particleNormal": "Particle Normal",
@@ -78,6 +81,8 @@
   "riposte.client.cameraRecoil": "Camera Recoil",
   "riposte.client.recoilIntensity": "Recoil Intensity",
   "riposte.client.recoilDurationMs": "Recoil Duration (ms)",
+
+  "riposte.client.fovSettings": "FOV Settings",
   "riposte.client.fovChange": "FOV Change",
   "riposte.client.fovZoom": "FOV Zoom Out",
   "riposte.client.fovDurationMs": "FOV Duration (ms)",

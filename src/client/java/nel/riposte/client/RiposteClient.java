@@ -64,7 +64,6 @@ public class RiposteClient implements ClientModInitializer {
 	public static long lastLethalParryTimestamp = 0L;
 	public static boolean shaderActive = false;
 
-	// --- NEW: 5-Axis Camera Spring System ---
 	public static float currentCameraZOffset = 0f;
 	public static float currentCameraXOffset = 0f;
 	public static float currentCameraYOffset = 0f;
@@ -153,17 +152,13 @@ public class RiposteClient implements ClientModInitializer {
 					ParryData data = (ParryData) client.player;
 					data.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
-					// --- NEW: Inject the violent camera offsets based on Config ---
-					// The literal X/Y "Walk" (Translation)
-					currentCameraXOffset = (random.nextFloat() - 0.5f) * CLIENT_CONFIG.cameraWalkAmplitude;
-					currentCameraYOffset = (random.nextFloat() - 0.5f) * CLIENT_CONFIG.cameraWalkAmplitude;
-
-					// The physical Z pushback into the character's head
-					currentCameraZOffset = -CLIENT_CONFIG.cameraPushback;
-
-					// The rapid rotation snap (Pitch goes negative to snap view UP)
-					currentPitchOffset = -((random.nextFloat() * 4.0f) + 2.0f) * CLIENT_CONFIG.cameraShakeIntensity;
-					currentYawOffset = (random.nextFloat() - 0.5f) * 6.0f * CLIENT_CONFIG.cameraShakeIntensity;
+					if (CLIENT_CONFIG.cameraShake) {
+						currentCameraXOffset = (random.nextFloat() - 0.5f) * CLIENT_CONFIG.cameraWalkAmplitude;
+						currentCameraYOffset = (random.nextFloat() - 0.5f) * CLIENT_CONFIG.cameraWalkAmplitude;
+						currentCameraZOffset = -CLIENT_CONFIG.cameraPushback;
+						currentPitchOffset = -((random.nextFloat() * 4.0f) + 2.0f) * CLIENT_CONFIG.shakeIntensity;
+						currentYawOffset = (random.nextFloat() - 0.5f) * 6.0f * CLIENT_CONFIG.shakeIntensity;
+					}
 
 					var capability = io.wispforest.accessories.api.AccessoriesCapability.get(client.player);
 					if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
@@ -207,7 +202,6 @@ public class RiposteClient implements ClientModInitializer {
 				}
 			}
 
-			// --- NEW: Smoothly decay all 5 axes back to zero every tick ---
 			currentCameraZOffset *= 0.75f;
 			currentCameraXOffset *= 0.75f;
 			currentCameraYOffset *= 0.75f;
@@ -252,8 +246,24 @@ public class RiposteClient implements ClientModInitializer {
 				}
 			}
 
-			int x = (screenWidth / 2) + CLIENT_CONFIG.xOffset;
-			int y = (screenHeight / 2) + CLIENT_CONFIG.yOffset;
+			// --- NEW: Calculate the Base Anchor X/Y before applying offsets ---
+			int baseX = screenWidth / 2;
+			int baseY = screenHeight / 2;
+
+			switch (CLIENT_CONFIG.iconAnchor) {
+				case TOP_LEFT -> { baseX = 0; baseY = 0; }
+				case TOP_CENTER -> { baseX = screenWidth / 2; baseY = 0; }
+				case TOP_RIGHT -> { baseX = screenWidth; baseY = 0; }
+				case CENTER_LEFT -> { baseX = 0; baseY = screenHeight / 2; }
+				case CENTER -> { baseX = screenWidth / 2; baseY = screenHeight / 2; }
+				case CENTER_RIGHT -> { baseX = screenWidth; baseY = screenHeight / 2; }
+				case BOTTOM_LEFT -> { baseX = 0; baseY = screenHeight; }
+				case BOTTOM_CENTER -> { baseX = screenWidth / 2; baseY = screenHeight; }
+				case BOTTOM_RIGHT -> { baseX = screenWidth; baseY = screenHeight; }
+			}
+
+			int x = baseX + CLIENT_CONFIG.xOffset;
+			int y = baseY + CLIENT_CONFIG.yOffset;
 
 			drawContext.getMatrices().push();
 			drawContext.getMatrices().translate(x, y, 0);
