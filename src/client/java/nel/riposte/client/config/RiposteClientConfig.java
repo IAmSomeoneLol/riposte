@@ -34,6 +34,7 @@ public class RiposteClientConfig extends Config {
     public int yOffset = 20;
     @ConfigGroup.Pop
     public float iconScale = 1.0f;
+    public boolean playCooldownSound = true;
 
     public ConfigGroup cameraControlGroup = new ConfigGroup("cameraControl");
 
@@ -41,6 +42,9 @@ public class RiposteClientConfig extends Config {
     public boolean cameraShake = true;
     public float shakeIntensity = 4.0f;
     public int shakeDurationMs = 200;
+    public float cameraShakeIntensity = 1.0f; // Rotational snap (Pitch/Yaw)
+    public float cameraWalkAmplitude = 0.5f;  // Translational drift (X/Y axis)
+    public float cameraPushback = 0.8f;       // Physical shove backward (Z axis)
 
     // Camera Recoil Settings
     public boolean cameraRecoil = true;

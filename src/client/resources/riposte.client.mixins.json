@@ -7,7 +7,7 @@
 		"CameraMixin",
 		"GameRendererInvoker",
 		"FovMixin",
-		"HeldItemRendererMixin"
+		"PlayerEntityModelMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -4,6 +4,12 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import io.wispforest.accessories.api.client.AccessoriesRendererRegistry;
 import io.wispforest.accessories.api.client.SimpleAccessoryRenderer;
 import io.wispforest.accessories.api.slot.SlotReference;
+import dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode;
+import dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration;
+import dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier;
+import dev.kosmx.playerAnim.core.util.Vec3f;
+import dev.kosmx.playerAnim.api.TransformType;
+import dev.kosmx.playerAnim.api.layered.IAnimation;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
 import me.fzzyhmstrs.fzzy_config.api.RegisterType;
 import nel.riposte.ParryData;
@@ -15,12 +21,12 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
@@ -29,7 +35,7 @@ import net.minecraft.item.SwordItem;
 import net.minecraft.item.MiningToolItem;
 import net.minecraft.item.TridentItem;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.util.ActionResult;
+import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
@@ -45,14 +51,25 @@ public class RiposteClient implements ClientModInitializer {
 
 	private static KeyBinding parryKey;
 	public static RiposteClientConfig CLIENT_CONFIG;
-	private static final Identifier PARRY_ICON = new Identifier(Riposte.MOD_ID, "textures/gui/cooldown_parry.png");
 	private static final Random random = new Random();
+
+	private static final Identifier PARRY_ICON_FULL = new Identifier(Riposte.MOD_ID, "textures/gui/cooldown_parry.png");
+	private static final Identifier PARRY_ICON_EMPTY = new Identifier(Riposte.MOD_ID, "textures/gui/cooldown_parry_empty.png");
+	private static final Identifier PARRY_ICON_CHARGING = new Identifier(Riposte.MOD_ID, "textures/gui/cooldown_parry_charging.png");
+
+	private static final Identifier CHARGE_SOUND_ID = new Identifier(Riposte.MOD_ID, "cooldown_charge_finish");
+	private static final SoundEvent CHARGE_SOUND = SoundEvent.of(CHARGE_SOUND_ID);
+	private static boolean wasCharging = false;
 
 	public static long lastLethalParryTimestamp = 0L;
 	public static boolean shaderActive = false;
 
-	public static float recoilDirX = 0f;
-	public static float recoilDirY = 0f;
+	// --- NEW: 5-Axis Camera Spring System ---
+	public static float currentCameraZOffset = 0f;
+	public static float currentCameraXOffset = 0f;
+	public static float currentCameraYOffset = 0f;
+	public static float currentPitchOffset = 0f;
+	public static float currentYawOffset = 0f;
 
 	@Override
 	public void onInitializeClient() {
@@ -113,7 +130,7 @@ public class RiposteClient implements ClientModInitializer {
 						double vy = random.nextDouble() * 0.5;
 						double vz = (random.nextDouble() - 0.5) * 0.5;
 						client.world.addParticle(ParticleTypes.SOUL_FIRE_FLAME, px, py, pz, vx, vy, vz);
-						client.world.addParticle(ParticleTypes.ELECTRIC_SPARK, px, py, pz, vx, vy, vz);
+						client.world.addParticle(ParticleTypes.ELECTRIC_SPARK, px, py, pz, vx, vz, vz);
 					}
 				}
 			});
@@ -136,10 +153,17 @@ public class RiposteClient implements ClientModInitializer {
 					ParryData data = (ParryData) client.player;
 					data.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
-					recoilDirX = (random.nextFloat() - 0.5f) * 2.0f;
-					recoilDirY = (random.nextFloat() * 1.2f) - 1.0f;
-					float length = (float) Math.sqrt(recoilDirX * recoilDirX + recoilDirY * recoilDirY);
-					if (length > 0) { recoilDirX /= length; recoilDirY /= length; }
+					// --- NEW: Inject the violent camera offsets based on Config ---
+					// The literal X/Y "Walk" (Translation)
+					currentCameraXOffset = (random.nextFloat() - 0.5f) * CLIENT_CONFIG.cameraWalkAmplitude;
+					currentCameraYOffset = (random.nextFloat() - 0.5f) * CLIENT_CONFIG.cameraWalkAmplitude;
+
+					// The physical Z pushback into the character's head
+					currentCameraZOffset = -CLIENT_CONFIG.cameraPushback;
+
+					// The rapid rotation snap (Pitch goes negative to snap view UP)
+					currentPitchOffset = -((random.nextFloat() * 4.0f) + 2.0f) * CLIENT_CONFIG.cameraShakeIntensity;
+					currentYawOffset = (random.nextFloat() - 0.5f) * 6.0f * CLIENT_CONFIG.cameraShakeIntensity;
 
 					var capability = io.wispforest.accessories.api.AccessoriesCapability.get(client.player);
 					if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
@@ -157,11 +181,16 @@ public class RiposteClient implements ClientModInitializer {
 
 					var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, "kick_hit"));
 					if (animation != null) {
-						ModifierLayer<dev.kosmx.playerAnim.api.layered.IAnimation> animationContainer =
-								(ModifierLayer<dev.kosmx.playerAnim.api.layered.IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
+						ModifierLayer<IAnimation> animationContainer =
+								(ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
 
 						if (animationContainer != null) {
-							animationContainer.setAnimation(new KeyframeAnimationPlayer(animation));
+							var keyframePlayer = new KeyframeAnimationPlayer(animation);
+
+							keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
+							keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, true, true, true));
+
+							animationContainer.setAnimation(keyframePlayer);
 						}
 					}
 				}
@@ -177,6 +206,13 @@ public class RiposteClient implements ClientModInitializer {
 					shaderActive = false;
 				}
 			}
+
+			// --- NEW: Smoothly decay all 5 axes back to zero every tick ---
+			currentCameraZOffset *= 0.75f;
+			currentCameraXOffset *= 0.75f;
+			currentCameraYOffset *= 0.75f;
+			currentPitchOffset *= 0.8f;
+			currentYawOffset *= 0.8f;
 
 			while (parryKey.wasPressed()) {
 				if (CLIENT_CONFIG.parryActivation == RiposteClientConfig.ExecutionMode.KEYBIND) {
@@ -226,12 +262,26 @@ public class RiposteClient implements ClientModInitializer {
 			float progress = Math.min(1.0f, (float) timeSinceParry / currentCooldown);
 			int fillHeight = (int) (16 * progress);
 
-			RenderSystem.setShaderColor(0.15f, 0.15f, 0.15f, 0.7f);
-			drawContext.drawTexture(PARRY_ICON, -8, -8, 0, 0, 16, 16, 16, 16);
-
-			if (fillHeight > 0) {
+			if (progress >= 1.0f) {
 				RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-				drawContext.drawTexture(PARRY_ICON, -8, 8 - fillHeight, 0, 16 - fillHeight, 16, fillHeight, 16, 16);
+				drawContext.drawTexture(PARRY_ICON_FULL, -8, -8, 0, 0, 16, 16, 16, 16);
+
+				if (wasCharging) {
+					if (CLIENT_CONFIG.playCooldownSound) {
+						float randomPitch = 0.7f + (random.nextFloat() * 0.6f);
+						client.getSoundManager().play(PositionedSoundInstance.master(CHARGE_SOUND, randomPitch, 1.0f));
+					}
+					wasCharging = false;
+				}
+			} else {
+				wasCharging = true;
+
+				RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+				drawContext.drawTexture(PARRY_ICON_EMPTY, -8, -8, 0, 0, 16, 16, 16, 16);
+
+				if (fillHeight > 0) {
+					drawContext.drawTexture(PARRY_ICON_CHARGING, -8, 8 - fillHeight, 0, 16 - fillHeight, 16, fillHeight, 16, 16);
+				}
 			}
 
 			RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -255,11 +305,44 @@ public class RiposteClient implements ClientModInitializer {
 				var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
 
 				if (animation != null) {
-					var animationContainer = (ModifierLayer<dev.kosmx.playerAnim.api.layered.IAnimation>)
+					var animationContainer = (ModifierLayer<IAnimation>)
 							PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
 
 					if (animationContainer != null) {
-						animationContainer.setAnimation(new KeyframeAnimationPlayer(animation));
+						var keyframePlayer = new KeyframeAnimationPlayer(animation);
+
+						keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
+						keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, true, true, true));
+
+						ModifierLayer<IAnimation> offsetLayer = new ModifierLayer<>();
+						offsetLayer.setAnimation(keyframePlayer);
+
+						offsetLayer.addModifierLast(new AbstractModifier() {
+							@Override
+							public Vec3f get3DTransform(String modelName, TransformType type, float tickDelta, Vec3f value0) {
+								Vec3f base = super.get3DTransform(modelName, type, tickDelta, value0);
+
+								if (type == TransformType.POSITION && MinecraftClient.getInstance().options.getPerspective().isFirstPerson()) {
+									if (modelName.equals("rightArm") || modelName.equals("right_arm") || modelName.equals("rightItem")) {
+
+										float maxTick = 14.16f;
+										float currentTick = keyframePlayer.getTick();
+										float animProgress = Math.min(1.0f, Math.max(0.0f, currentTick / maxTick));
+
+										float easeFactor = (float) Math.sin(animProgress * Math.PI);
+
+										float offsetX = 0f;
+										float offsetY = 0f;
+										float offsetZ = -6.0f * easeFactor;
+
+										return new Vec3f(base.getX() + offsetX, base.getY() + offsetY, base.getZ() + offsetZ);
+									}
+								}
+								return base;
+							}
+						});
+
+						animationContainer.setAnimation(offsetLayer);
 					}
 				}
 

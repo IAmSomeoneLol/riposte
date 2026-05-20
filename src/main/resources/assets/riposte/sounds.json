@@ -26,5 +26,11 @@
     "sounds": [
       "riposte:heavy_hit1"
     ]
+  },
+  "cooldown_charge_finish": {
+    "category": "player",
+    "sounds": [
+      "riposte:cooldown_charge_finish"
+    ]
   }
 }
