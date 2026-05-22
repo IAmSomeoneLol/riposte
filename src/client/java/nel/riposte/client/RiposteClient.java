@@ -123,9 +123,11 @@ public class RiposteClient implements ClientModInitializer {
 
 				if (isWeapon && CLIENT_CONFIG.particleHeavy) {
 					for (int i = 0; i < 15; i++) {
-						double vx = (random.nextDouble() - 0.5) * 1.5;
-						double vy = (random.nextDouble() * 1.5) + 0.5;
-						double vz = (random.nextDouble() - 0.5) * 1.5;
+						// Balanced Initial Burst - With the new low drag, 3.5 creates the perfect spear effect!
+						double vx = (random.nextDouble() - 0.5) * 3.5;
+						double vy = (random.nextDouble() - 0.5) * 3.5;
+						double vz = (random.nextDouble() - 0.5) * 3.5;
+
 						client.world.addParticle(Riposte.PARRY_TRAIL, px, py, pz, vx, vy, vz);
 					}
 				}
