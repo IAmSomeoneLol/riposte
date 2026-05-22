@@ -16,10 +16,12 @@ import nel.riposte.ParryData;
 import nel.riposte.Riposte;
 import nel.riposte.client.config.RiposteClientConfig;
 import nel.riposte.client.mixin.GameRendererInvoker;
+import nel.riposte.client.particle.ParryTrailParticle;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
@@ -68,6 +70,8 @@ public class RiposteClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new, RegisterType.CLIENT);
 
+		ParticleFactoryRegistry.getInstance().register(Riposte.PARRY_TRAIL, provider -> new ParryTrailParticle.Factory(provider));
+
 		parryKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.riposte.parry",
 				InputUtil.Type.KEYSYM,
@@ -102,7 +106,7 @@ public class RiposteClient implements ClientModInitializer {
 			double px = buf.readDouble();
 			double py = buf.readDouble();
 			double pz = buf.readDouble();
-			float yaw = buf.readFloat();
+			buf.readFloat();
 			boolean isWeapon = buf.readBoolean();
 
 			client.execute(() -> {
@@ -119,11 +123,10 @@ public class RiposteClient implements ClientModInitializer {
 
 				if (isWeapon && CLIENT_CONFIG.particleHeavy) {
 					for (int i = 0; i < 15; i++) {
-						double vx = (random.nextDouble() - 0.5) * 0.5;
-						double vy = random.nextDouble() * 0.5;
-						double vz = (random.nextDouble() - 0.5) * 0.5;
-						client.world.addParticle(ParticleTypes.SOUL_FIRE_FLAME, px, py, pz, vx, vy, vz);
-						client.world.addParticle(ParticleTypes.ELECTRIC_SPARK, px, py, pz, vx, vz, vz);
+						double vx = (random.nextDouble() - 0.5) * 1.5;
+						double vy = (random.nextDouble() * 1.5) + 0.5;
+						double vz = (random.nextDouble() - 0.5) * 1.5;
+						client.world.addParticle(Riposte.PARRY_TRAIL, px, py, pz, vx, vy, vz);
 					}
 				}
 			});
@@ -168,7 +171,6 @@ public class RiposteClient implements ClientModInitializer {
 						if (animationContainer != null) {
 							var keyframePlayer = new KeyframeAnimationPlayer(animation);
 
-							// Using VANILLA mode here for proper hand animation
 							keyframePlayer.setFirstPersonMode(FirstPersonMode.VANILLA);
 							keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
 
@@ -301,7 +303,6 @@ public class RiposteClient implements ClientModInitializer {
 					if (animationContainer != null) {
 						var keyframePlayer = new KeyframeAnimationPlayer(animation);
 
-						// Setting to VANILLA mode as requested
 						keyframePlayer.setFirstPersonMode(FirstPersonMode.VANILLA);
 						keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
 

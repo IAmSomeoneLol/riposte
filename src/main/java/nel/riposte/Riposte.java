@@ -16,6 +16,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
+import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.registry.Registry;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
@@ -27,6 +29,8 @@ public class Riposte implements ModInitializer {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	public static RiposteConfig CONFIG;
+
+	public static final DefaultParticleType PARRY_TRAIL = FabricParticleTypes.simple();
 
 	public static final Identifier WEAPON_PARRY_ID = new Identifier(MOD_ID, "weapon_parry");
 	public static final SoundEvent WEAPON_PARRY_SOUND = SoundEvent.of(WEAPON_PARRY_ID);
@@ -74,6 +78,8 @@ public class Riposte implements ModInitializer {
 	public void onInitialize() {
 		LOGGER.info("Initializing Riposte Parry Mechanics...");
 		CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteConfig::new);
+
+		Registry.register(Registries.PARTICLE_TYPE, new Identifier(MOD_ID, "parry_trail"), PARRY_TRAIL);
 
 		Registry.register(Registries.SOUND_EVENT, WEAPON_PARRY_ID, WEAPON_PARRY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, NORMAL_PARRY_ID, NORMAL_PARRY_SOUND);
