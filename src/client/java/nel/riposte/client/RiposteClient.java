@@ -64,12 +64,6 @@ public class RiposteClient implements ClientModInitializer {
 	public static long lastLethalParryTimestamp = 0L;
 	public static boolean shaderActive = false;
 
-	public static float currentCameraZOffset = 0f;
-	public static float currentCameraXOffset = 0f;
-	public static float currentCameraYOffset = 0f;
-	public static float currentPitchOffset = 0f;
-	public static float currentYawOffset = 0f;
-
 	@Override
 	public void onInitializeClient() {
 		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new, RegisterType.CLIENT);
@@ -152,14 +146,6 @@ public class RiposteClient implements ClientModInitializer {
 					ParryData data = (ParryData) client.player;
 					data.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
-					if (CLIENT_CONFIG.cameraShake) {
-						currentCameraXOffset = (random.nextFloat() - 0.5f) * CLIENT_CONFIG.cameraWalkAmplitude;
-						currentCameraYOffset = (random.nextFloat() - 0.5f) * CLIENT_CONFIG.cameraWalkAmplitude;
-						currentCameraZOffset = -CLIENT_CONFIG.cameraPushback;
-						currentPitchOffset = -((random.nextFloat() * 4.0f) + 2.0f) * CLIENT_CONFIG.shakeIntensity;
-						currentYawOffset = (random.nextFloat() - 0.5f) * 6.0f * CLIENT_CONFIG.shakeIntensity;
-					}
-
 					var capability = io.wispforest.accessories.api.AccessoriesCapability.get(client.player);
 					if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
 						data.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
@@ -182,8 +168,9 @@ public class RiposteClient implements ClientModInitializer {
 						if (animationContainer != null) {
 							var keyframePlayer = new KeyframeAnimationPlayer(animation);
 
-							keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
-							keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, true, true, true));
+							// Using VANILLA mode here for proper hand animation
+							keyframePlayer.setFirstPersonMode(FirstPersonMode.VANILLA);
+							keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
 
 							animationContainer.setAnimation(keyframePlayer);
 						}
@@ -201,12 +188,6 @@ public class RiposteClient implements ClientModInitializer {
 					shaderActive = false;
 				}
 			}
-
-			currentCameraZOffset *= 0.75f;
-			currentCameraXOffset *= 0.75f;
-			currentCameraYOffset *= 0.75f;
-			currentPitchOffset *= 0.8f;
-			currentYawOffset *= 0.8f;
 
 			while (parryKey.wasPressed()) {
 				if (CLIENT_CONFIG.parryActivation == RiposteClientConfig.ExecutionMode.KEYBIND) {
@@ -246,7 +227,6 @@ public class RiposteClient implements ClientModInitializer {
 				}
 			}
 
-			// --- NEW: Calculate the Base Anchor X/Y before applying offsets ---
 			int baseX = screenWidth / 2;
 			int baseY = screenHeight / 2;
 
@@ -321,8 +301,9 @@ public class RiposteClient implements ClientModInitializer {
 					if (animationContainer != null) {
 						var keyframePlayer = new KeyframeAnimationPlayer(animation);
 
-						keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
-						keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, true, true, true));
+						// Setting to VANILLA mode as requested
+						keyframePlayer.setFirstPersonMode(FirstPersonMode.VANILLA);
+						keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
 
 						ModifierLayer<IAnimation> offsetLayer = new ModifierLayer<>();
 						offsetLayer.setAnimation(keyframePlayer);

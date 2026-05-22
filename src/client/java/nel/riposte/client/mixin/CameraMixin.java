@@ -30,16 +30,19 @@ public abstract class CameraMixin {
 
         float finalPitchOffset = 0f;
         float finalYawOffset = 0f;
-        float finalXOffset = 0f;
-        float finalYOffset = 0f;
-        float finalZOffset = 0f;
 
+        float forwardMove = 0f;
+        float upMove = 0f;
+        float rightMove = 0f;
+
+        // 1. RECOIL LOGIC (Smooth Directional Kick)
         if (RiposteClient.CLIENT_CONFIG.cameraRecoil && timeSince < RiposteClient.CLIENT_CONFIG.recoilDurationMs) {
             float progress = (float) timeSince / RiposteClient.CLIENT_CONFIG.recoilDurationMs;
             float ease = (float) Math.pow(1.0 - progress, 3);
             finalPitchOffset -= RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
         }
 
+        // 2. SHAKE & PUSHBACK LOGIC (Physical Translation)
         if (RiposteClient.CLIENT_CONFIG.cameraShake && timeSince < 250) {
             float progress = (float) timeSince / 250f;
             float fade = Math.max(0.0f, 1.0f - progress);
@@ -50,17 +53,19 @@ public abstract class CameraMixin {
             finalPitchOffset += noiseX * RiposteClient.CLIENT_CONFIG.shakeIntensity * fade * 3.0f;
             finalYawOffset += noiseY * RiposteClient.CLIENT_CONFIG.shakeIntensity * fade * 3.0f;
 
-            if (!thirdPerson) {
-                finalXOffset = noiseX * RiposteClient.CLIENT_CONFIG.cameraWalkAmplitude * fade;
-                finalYOffset = noiseY * RiposteClient.CLIENT_CONFIG.cameraWalkAmplitude * fade;
-                finalZOffset = -RiposteClient.CLIENT_CONFIG.cameraPushback * fade;
-            }
+            // Mapping the variables correctly based on Minecraft's Camera axes
+            rightMove = noiseX * RiposteClient.CLIENT_CONFIG.cameraWalkAmplitude * fade;
+            upMove = noiseY * RiposteClient.CLIENT_CONFIG.cameraWalkAmplitude * fade;
+
+            // Negative value moves the camera backwards!
+            forwardMove = -RiposteClient.CLIENT_CONFIG.cameraPushback * fade;
         }
 
-        if (!thirdPerson) {
-            this.moveBy(finalXOffset, finalYOffset, finalZOffset);
-        }
+        // Apply physical pushback and walk in BOTH First and Third Person
+        // Parameter 1: Forward/Back | Parameter 2: Up/Down | Parameter 3: Left/Right
+        this.moveBy(forwardMove, upMove, rightMove);
 
+        // Apply visual rotation shake
         this.setRotation(this.yaw + finalYawOffset, this.pitch + finalPitchOffset);
     }
 }
