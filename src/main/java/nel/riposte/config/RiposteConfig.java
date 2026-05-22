@@ -15,6 +15,7 @@ public class RiposteConfig extends Config {
     public int parryWindowMs = 175;
     public int parryCooldownMs = 1000;
     public double parryKnockback = 1.0;
+    public boolean allowParryWhileUsingItem = false;
     @ConfigGroup.Pop
     public boolean enforceKnockback = true;
 
@@ -24,8 +25,9 @@ public class RiposteConfig extends Config {
     public boolean deflectProjectiles = true;
     public boolean kickCombo = true;
     public double kickComboKnockbackMultiplier = 1.5;
-    @ConfigGroup.Pop
     public int kickComboWindowMs = 1000;
+    @ConfigGroup.Pop
+    public boolean allowMultiParry = false;
 
     public ConfigGroup accessoriesConfigGroup = new ConfigGroup("accessoriesConfig");
     public int ironPlateWindowBonusMs = 50;

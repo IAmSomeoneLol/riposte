@@ -97,6 +97,11 @@ public class PlayerEntityMixin implements ParryData {
         int currentWindow = this.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
         if (this.isParryActive(currentWindow)) {
 
+            // NEW: MULTI-PARRY CONSUMPTION CHECK
+            if (!Riposte.CONFIG.allowMultiParry && this.successfulParryTimestamp >= this.parryTimestamp) {
+                return; // Parry was already used up!
+            }
+
             Box parryBox = player.getBoundingBox().expand(1.5);
             List<ProjectileEntity> projectiles = player.getWorld().getEntitiesByClass(
                     ProjectileEntity.class,
@@ -115,8 +120,6 @@ public class PlayerEntityMixin implements ParryData {
                         player.getEyeY() + (lookDir.y * 0.5),
                         player.getZ() + (lookDir.z * 0.5)
                 );
-
-                // Lethal Logic for Projectiles (usually projectiles don't have direct damage value available easily here, so we assume normal impact unless you add a complex raycast damage check)
 
                 if (projectile instanceof PersistentProjectileEntity arrow) {
                     ((PersistentProjectileEntityAccessor) arrow).setInGround(false);
@@ -143,8 +146,6 @@ public class PlayerEntityMixin implements ParryData {
                 player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
 
                 if (!player.getWorld().isClient) {
-                    // Crosshair Anchoring: Spawns exactly 1.2 blocks in front of the camera,
-                    // and slightly lowered (-0.2) so it perfectly aligns with the viewmodel weapon!
                     double midX = player.getX() + (lookDir.x * 1.2);
                     double midY = player.getEyeY() + (lookDir.y * 1.2) - 0.2;
                     double midZ = player.getZ() + (lookDir.z * 1.2);
@@ -197,7 +198,6 @@ public class PlayerEntityMixin implements ParryData {
                     this.applyParryKnockback(livingTarget, heavyKnockback, player.getX() - livingTarget.getX(), player.getZ() - livingTarget.getZ());
                     this.lastParriedEntityId = -1;
 
-                    // NEW: Play the Kick Sound!
                     float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.4f;
                     player.getWorld().playSound(null, player.getBlockPos(), Riposte.KICK_COMBO_SOUND, SoundCategory.PLAYERS, 1.0f, randomPitch);
 

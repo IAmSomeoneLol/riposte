@@ -98,7 +98,19 @@ public abstract class LivingEntityMixin implements HitstopData {
             int currentWindow = parryData.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
             if (parryData.isParryActive(currentWindow)) {
+
+                if (!Riposte.CONFIG.allowMultiParry && parryData.getSuccessfulParryTimestamp() >= parryData.getParryTimestamp()) {
+                    return;
+                }
+
                 cir.setReturnValue(false);
+
+                int iFrames = 10;
+                var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
+                if (capability != null && capability.isEquipped(Riposte.COBALT_PLATE)) {
+                    iFrames = 20;
+                }
+                player.timeUntilRegen = iFrames;
 
                 if (source.isIn(DamageTypeTags.IS_PROJECTILE)) {
                     return;
@@ -118,7 +130,6 @@ public abstract class LivingEntityMixin implements HitstopData {
                 Item item = mainHand.getItem();
                 boolean isWeapon = item instanceof SwordItem || item instanceof MiningToolItem || item instanceof TridentItem;
 
-                // NEW: Calculate if this was a lethal hit!
                 boolean isLethal = amount >= player.getHealth();
 
                 float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
@@ -127,8 +138,6 @@ public abstract class LivingEntityMixin implements HitstopData {
                 player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
 
                 if (!player.getWorld().isClient) {
-                    // Crosshair Anchoring: Spawns exactly 1.2 blocks in front of the camera,
-                    // and slightly lowered (-0.2) so it perfectly aligns with the viewmodel weapon!
                     Vec3d look = player.getRotationVector();
                     double midX = player.getX() + (look.x * 1.2);
                     double midY = player.getEyeY() + (look.y * 1.2) - 0.2;
@@ -152,7 +161,6 @@ public abstract class LivingEntityMixin implements HitstopData {
                         buf.writeBoolean(isWeapon);
                         ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_VFX_PACKET, buf);
 
-                        // NEW: Send Lethal Visuals to the defending player!
                         if (isLethal) {
                             ServerPlayNetworking.send(serverPlayer, Riposte.LETHAL_VFX_PACKET, PacketByteBufs.create());
                         }
@@ -165,7 +173,6 @@ public abstract class LivingEntityMixin implements HitstopData {
                     ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, PacketByteBufs.create());
                 }
 
-                var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
                 if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
                     parryData.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
                 }

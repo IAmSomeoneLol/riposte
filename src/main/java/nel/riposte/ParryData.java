@@ -27,6 +27,12 @@ public interface ParryData {
     }
 
     default boolean canParry(int cooldownMs) {
+        PlayerEntity player = (PlayerEntity) this;
+
+        if (!Riposte.CONFIG.allowParryWhileUsingItem && player.isUsingItem()) {
+            return false;
+        }
+
         return System.currentTimeMillis() - getParryTimestamp() >= cooldownMs;
     }
 
@@ -82,14 +88,12 @@ public interface ParryData {
     }
 
     default void refundParryCooldown(float percentage) {
-        // Flattened reference here
         int currentCooldown = getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
         long refundAmount = (long) (currentCooldown * percentage);
         setParryTimestamp(getParryTimestamp() - refundAmount);
     }
 
     default void applyParryKnockback(LivingEntity target, double strength, double x, double z) {
-        // Flattened reference here
         if (Riposte.CONFIG.enforceKnockback) {
             target.velocityModified = true;
 
