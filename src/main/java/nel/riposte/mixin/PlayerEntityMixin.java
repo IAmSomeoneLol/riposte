@@ -143,9 +143,11 @@ public class PlayerEntityMixin implements ParryData {
                 player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
 
                 if (!player.getWorld().isClient) {
-                    double midX = (player.getX() + projectile.getX()) / 2.0;
-                    double midY = (player.getEyeY() + projectile.getY()) / 2.0;
-                    double midZ = (player.getZ() + projectile.getZ()) / 2.0;
+                    // Crosshair Anchoring: Spawns exactly 1.2 blocks in front of the camera,
+                    // and slightly lowered (-0.2) so it perfectly aligns with the viewmodel weapon!
+                    double midX = player.getX() + (lookDir.x * 1.2);
+                    double midY = player.getEyeY() + (lookDir.y * 1.2) - 0.2;
+                    double midZ = player.getZ() + (lookDir.z * 1.2);
 
                     for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
                         PacketByteBuf buf = PacketByteBufs.create();

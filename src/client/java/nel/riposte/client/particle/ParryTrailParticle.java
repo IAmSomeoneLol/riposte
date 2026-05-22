@@ -15,9 +15,9 @@ import java.util.LinkedList;
 public class ParryTrailParticle extends SpriteBillboardParticle {
 
     private final LinkedList<Vec3d> trailHistory = new LinkedList<>();
-    private final int maxTrailLength = 80; // Massive history buffer for a much longer tail!
-    private final float baseSize = 0.015f; // Extremely thin, almost line-like
-    private final double dotSpacing = 0.15; // Gap distance between interpolation squares
+    private final int maxTrailLength = 80;
+    private final float baseSize = 0.030f;
+    private final double dotSpacing = 0.15;
 
     protected ParryTrailParticle(ClientWorld world, double x, double y, double z, double vx, double vy, double vz) {
         super(world, x, y, z, vx, vy, vz);
@@ -25,8 +25,7 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
         this.velocityY = vy;
         this.velocityZ = vz;
 
-        // Steady lifetime to allow it to travel and fade out completely
-        this.maxAge = 35 + this.random.nextInt(15);
+        this.maxAge = 25 + this.random.nextInt(10);
         this.collidesWithWorld = true;
         this.trailHistory.add(new Vec3d(x, y, z));
     }
@@ -37,15 +36,13 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
         double oldVy = this.velocityY;
         double oldVz = this.velocityZ;
 
-        // STEADY PHYSICS: Almost zero gravity, light drag to maintain steady forward momentum
-        this.velocityY -= 0.005; // Barely perceptible drop
-        this.velocityX *= 0.96;
-        this.velocityZ *= 0.96;
-        this.velocityY *= 0.96;
+        this.velocityY -= 0.025;
+        this.velocityX *= 0.95;
+        this.velocityZ *= 0.95;
+        this.velocityY *= 0.95;
 
         super.move(this.velocityX, this.velocityY, this.velocityZ);
 
-        // Bouncing logic retains most momentum now
         if (this.velocityX == 0.0D && oldVx != 0.0D) this.velocityX = -oldVx * 0.8;
         if (this.onGround || (this.velocityY == 0.0D && oldVy != 0.0D)) this.velocityY = -oldVy * 0.8;
         if (this.velocityZ == 0.0D && oldVz != 0.0D) this.velocityZ = -oldVz * 0.8;
@@ -73,7 +70,6 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
 
         Quaternionf quaternion = camera.getRotation();
 
-        // Dying Fade Logic: Stays visible for the first half, fades out linearly in the second half
         float lifeRatio = (float) this.age / this.maxAge;
         float ageFade = lifeRatio > 0.5f ? (1.0f - lifeRatio) * 2.0f : 1.0f;
         if (ageFade < 0) ageFade = 0;
@@ -96,10 +92,8 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
                 float nextProgress = (float) (i + 1) / (this.trailHistory.size() - 1);
                 float progress = MathHelper.lerp(stepFraction, baseProgress, nextProgress);
 
-                // Thickness tapers down smoothly towards the tail
                 float currentSize = this.baseSize * (1.0f - (progress * 0.7f));
 
-                // White -> Cyan -> Deep Blue -> Navy Blue
                 float r, g, b;
                 if (progress < 0.1f) {
                     r = 1.0f; g = 1.0f; b = 1.0f;
@@ -115,7 +109,6 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
                     b = MathHelper.lerp(p, 1.0f, 0.8f);
                 }
 
-                // Apply tail gradient fade combined with the global dying fade
                 float alpha = ageFade * (1.0f - progress);
 
                 Vector3f[] corners = new Vector3f[]{

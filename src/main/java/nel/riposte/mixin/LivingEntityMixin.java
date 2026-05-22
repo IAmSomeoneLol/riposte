@@ -127,18 +127,12 @@ public abstract class LivingEntityMixin implements HitstopData {
                 player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
 
                 if (!player.getWorld().isClient) {
-                    double midX, midY, midZ;
-
-                    if (rawAttacker != null) {
-                        midX = (player.getX() + rawAttacker.getX()) / 2.0;
-                        midY = (player.getEyeY() + (rawAttacker.getY() + rawAttacker.getHeight() / 2.0)) / 2.0;
-                        midZ = (player.getZ() + rawAttacker.getZ()) / 2.0;
-                    } else {
-                        Vec3d look = player.getRotationVector();
-                        midX = player.getX() + look.x;
-                        midY = player.getEyeY() + look.y;
-                        midZ = player.getZ() + look.z;
-                    }
+                    // Crosshair Anchoring: Spawns exactly 1.2 blocks in front of the camera,
+                    // and slightly lowered (-0.2) so it perfectly aligns with the viewmodel weapon!
+                    Vec3d look = player.getRotationVector();
+                    double midX = player.getX() + (look.x * 1.2);
+                    double midY = player.getEyeY() + (look.y * 1.2) - 0.2;
+                    double midZ = player.getZ() + (look.z * 1.2);
 
                     for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
                         PacketByteBuf buf = PacketByteBufs.create();
