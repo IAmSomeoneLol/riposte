@@ -97,9 +97,8 @@ public class PlayerEntityMixin implements ParryData {
         int currentWindow = this.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
         if (this.isParryActive(currentWindow)) {
 
-            // NEW: MULTI-PARRY CONSUMPTION CHECK
             if (!Riposte.CONFIG.allowMultiParry && this.successfulParryTimestamp >= this.parryTimestamp) {
-                return; // Parry was already used up!
+                return;
             }
 
             Box parryBox = player.getBoundingBox().expand(1.5);
@@ -140,6 +139,8 @@ public class PlayerEntityMixin implements ParryData {
                 Item item = mainHand.getItem();
                 boolean isWeapon = item instanceof SwordItem || item instanceof MiningToolItem || item instanceof TridentItem;
 
+                boolean isHeavyDamage = speed > 2.0;
+
                 float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
                 SoundEvent soundToPlay = isWeapon ? Riposte.WEAPON_PARRY_SOUND : Riposte.NORMAL_PARRY_SOUND;
 
@@ -157,6 +158,7 @@ public class PlayerEntityMixin implements ParryData {
                         buf.writeDouble(midZ);
                         buf.writeFloat(player.getYaw());
                         buf.writeBoolean(isWeapon);
+                        buf.writeBoolean(isHeavyDamage);
                         ServerPlayNetworking.send(tracker, Riposte.PARRY_VFX_PACKET, buf);
                     }
                     if (player instanceof ServerPlayerEntity serverPlayer) {
@@ -166,6 +168,7 @@ public class PlayerEntityMixin implements ParryData {
                         buf.writeDouble(midZ);
                         buf.writeFloat(player.getYaw());
                         buf.writeBoolean(isWeapon);
+                        buf.writeBoolean(isHeavyDamage);
                         ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_VFX_PACKET, buf);
                     }
                 }

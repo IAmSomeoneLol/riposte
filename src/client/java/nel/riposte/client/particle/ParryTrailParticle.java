@@ -16,14 +16,16 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
 
     private final LinkedList<Vec3d> trailHistory = new LinkedList<>();
     private final int maxTrailLength = 80;
-    private final float baseSize = 0.030f;
+    private final float baseSize = 0.035f; // Updated size as requested!
     private final double dotSpacing = 0.15;
+    private final boolean isHeavy;
 
-    protected ParryTrailParticle(ClientWorld world, double x, double y, double z, double vx, double vy, double vz) {
+    protected ParryTrailParticle(ClientWorld world, double x, double y, double z, double vx, double vy, double vz, boolean isHeavy) {
         super(world, x, y, z, vx, vy, vz);
         this.velocityX = vx;
         this.velocityY = vy;
         this.velocityZ = vz;
+        this.isHeavy = isHeavy;
 
         this.maxAge = 25 + this.random.nextInt(10);
         this.collidesWithWorld = true;
@@ -95,18 +97,34 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
                 float currentSize = this.baseSize * (1.0f - (progress * 0.7f));
 
                 float r, g, b;
-                if (progress < 0.1f) {
-                    r = 1.0f; g = 1.0f; b = 1.0f;
-                } else if (progress < 0.3f) {
-                    float p = (progress - 0.1f) / 0.2f;
-                    r = MathHelper.lerp(p, 1.0f, 0.4f);
-                    g = MathHelper.lerp(p, 1.0f, 0.9f);
-                    b = 1.0f;
+                if (this.isHeavy) {
+                    if (progress < 0.1f) {
+                        r = 1.0f; g = 1.0f; b = 1.0f;
+                    } else if (progress < 0.3f) {
+                        float p = (progress - 0.1f) / 0.2f;
+                        r = MathHelper.lerp(p, 1.0f, 0.4f);
+                        g = MathHelper.lerp(p, 1.0f, 0.9f);
+                        b = 1.0f;
+                    } else {
+                        float p = (progress - 0.3f) / 0.7f;
+                        r = MathHelper.lerp(p, 0.4f, 0.1f);
+                        g = MathHelper.lerp(p, 0.9f, 0.5f);
+                        b = MathHelper.lerp(p, 1.0f, 0.8f);
+                    }
                 } else {
-                    float p = (progress - 0.3f) / 0.7f;
-                    r = MathHelper.lerp(p, 0.4f, 0.1f);
-                    g = MathHelper.lerp(p, 0.9f, 0.5f);
-                    b = MathHelper.lerp(p, 1.0f, 0.8f);
+                    if (progress < 0.1f) {
+                        r = 1.0f; g = 1.0f; b = 1.0f;
+                    } else if (progress < 0.3f) {
+                        float p = (progress - 0.1f) / 0.2f;
+                        r = 1.0f;
+                        g = MathHelper.lerp(p, 1.0f, 0.7f);
+                        b = MathHelper.lerp(p, 1.0f, 0.1f);
+                    } else {
+                        float p = (progress - 0.3f) / 0.7f;
+                        r = MathHelper.lerp(p, 1.0f, 0.8f);
+                        g = MathHelper.lerp(p, 0.7f, 0.2f);
+                        b = MathHelper.lerp(p, 0.1f, 0.0f);
+                    }
                 }
 
                 float alpha = ageFade * (1.0f - progress);
@@ -141,12 +159,23 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
         return ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT;
     }
 
-    public static class Factory implements ParticleFactory<DefaultParticleType> {
+    public static class HeavyFactory implements ParticleFactory<DefaultParticleType> {
         private final SpriteProvider spriteProvider;
-        public Factory(SpriteProvider spriteProvider) { this.spriteProvider = spriteProvider; }
+        public HeavyFactory(SpriteProvider spriteProvider) { this.spriteProvider = spriteProvider; }
         @Override
         public Particle createParticle(DefaultParticleType parameters, ClientWorld world, double x, double y, double z, double vx, double vy, double vz) {
-            ParryTrailParticle particle = new ParryTrailParticle(world, x, y, z, vx, vy, vz);
+            ParryTrailParticle particle = new ParryTrailParticle(world, x, y, z, vx, vy, vz, true);
+            particle.setSprite(this.spriteProvider);
+            return particle;
+        }
+    }
+
+    public static class LightFactory implements ParticleFactory<DefaultParticleType> {
+        private final SpriteProvider spriteProvider;
+        public LightFactory(SpriteProvider spriteProvider) { this.spriteProvider = spriteProvider; }
+        @Override
+        public Particle createParticle(DefaultParticleType parameters, ClientWorld world, double x, double y, double z, double vx, double vy, double vz) {
+            ParryTrailParticle particle = new ParryTrailParticle(world, x, y, z, vx, vy, vz, false);
             particle.setSprite(this.spriteProvider);
             return particle;
         }

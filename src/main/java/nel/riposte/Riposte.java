@@ -31,6 +31,7 @@ public class Riposte implements ModInitializer {
 	public static RiposteConfig CONFIG;
 
 	public static final DefaultParticleType PARRY_TRAIL = FabricParticleTypes.simple();
+	public static final DefaultParticleType PARRY_TRAIL_LIGHT = FabricParticleTypes.simple();
 
 	public static final Identifier WEAPON_PARRY_ID = new Identifier(MOD_ID, "weapon_parry");
 	public static final SoundEvent WEAPON_PARRY_SOUND = SoundEvent.of(WEAPON_PARRY_ID);
@@ -80,6 +81,7 @@ public class Riposte implements ModInitializer {
 		CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteConfig::new);
 
 		Registry.register(Registries.PARTICLE_TYPE, new Identifier(MOD_ID, "parry_trail"), PARRY_TRAIL);
+		Registry.register(Registries.PARTICLE_TYPE, new Identifier(MOD_ID, "parry_trail_light"), PARRY_TRAIL_LIGHT);
 
 		Registry.register(Registries.SOUND_EVENT, WEAPON_PARRY_ID, WEAPON_PARRY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, NORMAL_PARRY_ID, NORMAL_PARRY_SOUND);

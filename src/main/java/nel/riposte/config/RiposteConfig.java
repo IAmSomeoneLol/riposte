@@ -13,19 +13,19 @@ public class RiposteConfig extends Config {
 
     public ConfigGroup parrySettingsGroup = new ConfigGroup("parrySettings");
     public int parryWindowMs = 175;
-    public int parryCooldownMs = 1000;
-    public double parryKnockback = 1.0;
+    public int parryCooldownMs = 10000;
+    public double parryKnockback = 0.5;
     public boolean allowParryWhileUsingItem = false;
     @ConfigGroup.Pop
     public boolean enforceKnockback = true;
 
     public ConfigGroup parryAdaptionsGroup = new ConfigGroup("parryAdaptions");
     public boolean hitstop = true;
-    public int hitstopMs = 30;
+    public int hitstopMs = 45;
     public boolean deflectProjectiles = true;
     public boolean kickCombo = true;
     public double kickComboKnockbackMultiplier = 1.5;
-    public int kickComboWindowMs = 1000;
+    public int kickComboWindowMs = 550;
     @ConfigGroup.Pop
     public boolean allowMultiParry = false;
 

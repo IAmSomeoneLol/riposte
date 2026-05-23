@@ -36,41 +36,41 @@ public class RiposteClientConfig extends Config {
     public ExecutionMode parryActivation = ExecutionMode.KEYBIND;
 
     public ConfigGroup iconCooldownGroup = new ConfigGroup("iconCooldown");
-    public AnchorPoint iconAnchor = AnchorPoint.CENTER; // The new anchor setting!
+    public AnchorPoint iconAnchor = AnchorPoint.BOTTOM_CENTER; // The new anchor setting!
     public IconMode iconMode = IconMode.STATIC;
-    public int xOffset = 0;
-    public int yOffset = 20;
-    public float iconScale = 1.0f;
+    public int xOffset = 100;
+    public int yOffset = -12;
+    public float iconScale = 1.1f;
     @ConfigGroup.Pop
     public boolean playCooldownSound = true;
 
     public ConfigGroup cameraControlGroup = new ConfigGroup("cameraControl");
     public boolean cameraShake = true;
-    public float shakeIntensity = 4.0f;
-    public float cameraWalkAmplitude = 0.5f;
+    public float shakeIntensity = 1.001f;
+    public float cameraWalkAmplitude = 0.1f;
     @ConfigGroup.Pop
-    public float cameraPushback = 0.8f;
+    public float cameraPushback = 0.0f;
 
     public ConfigGroup cameraRecoilGroup = new ConfigGroup("cameraRecoil");
     public boolean cameraRecoil = true;
-    public float recoilIntensity = 4.0f;
+    public float recoilIntensity = 12.5f;
     @ConfigGroup.Pop
-    public int recoilDurationMs = 300;
+    public int recoilDurationMs = 1000;
 
     public ConfigGroup fovSettingsGroup = new ConfigGroup("fovSettings");
     public boolean fovChange = true;
-    public double fovZoom = 20.0;
+    public double fovZoom = 30.0;
     @ConfigGroup.Pop
-    public int fovDurationMs = 300;
+    public int fovDurationMs = 1900;
 
     public boolean lethalParryShader = true;
-    public int lethalShaderDurationMs = 200;
+    public int lethalShaderDurationMs = 100;
 
     public ConfigGroup flashScreenGroup = new ConfigGroup("flashScreen");
     public boolean screenFlash = true;
     public FlashType screenFlashType = FlashType.WHITE;
     @ConfigGroup.Pop
-    public int screenFlashDurationMs = 150;
+    public int screenFlashDurationMs = 250;
 
     public ConfigGroup particleConfigGroup = new ConfigGroup("particleConfig");
     public boolean particleNormal = true;

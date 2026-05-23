@@ -22,10 +22,6 @@ repositories {
 	// Official Player Animator Maven
 	maven { url "https://maven.kosmx.dev/" }
 
-	// Official LowDragMC Maven (For Photon & LDLib)
-	maven { url "https://maven.firstdark.dev/releases" }
-	maven { url "https://maven.firstdark.dev/snapshots" }
-
 	// Modrinth Maven
 	maven {
 		name = "Modrinth"
@@ -60,14 +56,6 @@ dependencies {
 
 	// Player Animator
 	modImplementation "dev.kosmx.player-anim:player-animation-lib-fabric:${project.player_animator_version}"
-
-	// Photon & LDLib (Excluding the blocked Sodium dependency)
-	modImplementation("com.lowdragmc.photon:photon-fabric-1.20.1:${project.photon_version}") {
-		exclude(group: "maven.modrinth", module: "sodium")
-	}
-	modImplementation("com.lowdragmc.ldlib:ldlib-fabric-1.20.1:${project.ldlib_version}") {
-		exclude(group: "maven.modrinth", module: "sodium")
-	}
 }
 
 processResources {

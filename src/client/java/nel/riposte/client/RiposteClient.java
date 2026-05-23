@@ -36,6 +36,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.MiningToolItem;
 import net.minecraft.item.TridentItem;
+import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
@@ -70,7 +71,8 @@ public class RiposteClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new, RegisterType.CLIENT);
 
-		ParticleFactoryRegistry.getInstance().register(Riposte.PARRY_TRAIL, provider -> new ParryTrailParticle.Factory(provider));
+		ParticleFactoryRegistry.getInstance().register(Riposte.PARRY_TRAIL, provider -> new ParryTrailParticle.HeavyFactory(provider));
+		ParticleFactoryRegistry.getInstance().register(Riposte.PARRY_TRAIL_LIGHT, provider -> new ParryTrailParticle.LightFactory(provider));
 
 		parryKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.riposte.parry",
@@ -106,8 +108,9 @@ public class RiposteClient implements ClientModInitializer {
 			double px = buf.readDouble();
 			double py = buf.readDouble();
 			double pz = buf.readDouble();
-			buf.readFloat();
+			float yaw = buf.readFloat();
 			boolean isWeapon = buf.readBoolean();
+			boolean isHeavyDamage = buf.readBoolean();
 
 			client.execute(() -> {
 				if (client.world == null) return;
@@ -122,13 +125,14 @@ public class RiposteClient implements ClientModInitializer {
 				}
 
 				if (isWeapon && CLIENT_CONFIG.particleHeavy) {
+					DefaultParticleType trailType = isHeavyDamage ? Riposte.PARRY_TRAIL : Riposte.PARRY_TRAIL_LIGHT;
+
 					for (int i = 0; i < 15; i++) {
-						// Balanced Initial Burst - With the new low drag, 3.5 creates the perfect spear effect!
 						double vx = (random.nextDouble() - 0.5) * 3.5;
 						double vy = (random.nextDouble() - 0.5) * 3.5;
 						double vz = (random.nextDouble() - 0.5) * 3.5;
 
-						client.world.addParticle(Riposte.PARRY_TRAIL, px, py, pz, vx, vy, vz);
+						client.world.addParticle(trailType, px, py, pz, vx, vy, vz);
 					}
 				}
 			});

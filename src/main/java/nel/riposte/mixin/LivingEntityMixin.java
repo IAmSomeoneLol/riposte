@@ -131,6 +131,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                 boolean isWeapon = item instanceof SwordItem || item instanceof MiningToolItem || item instanceof TridentItem;
 
                 boolean isLethal = amount >= player.getHealth();
+                boolean isHeavyDamage = amount >= (player.getMaxHealth() * 0.4f);
 
                 float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
                 SoundEvent soundToPlay = isLethal ? Riposte.LETHAL_PARRY_SOUND : (isWeapon ? Riposte.WEAPON_PARRY_SOUND : Riposte.NORMAL_PARRY_SOUND);
@@ -150,6 +151,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                         buf.writeDouble(midZ);
                         buf.writeFloat(player.getYaw());
                         buf.writeBoolean(isWeapon);
+                        buf.writeBoolean(isHeavyDamage);
                         ServerPlayNetworking.send(tracker, Riposte.PARRY_VFX_PACKET, buf);
                     }
                     if (player instanceof ServerPlayerEntity serverPlayer) {
@@ -159,6 +161,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                         buf.writeDouble(midZ);
                         buf.writeFloat(player.getYaw());
                         buf.writeBoolean(isWeapon);
+                        buf.writeBoolean(isHeavyDamage);
                         ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_VFX_PACKET, buf);
 
                         if (isLethal) {
