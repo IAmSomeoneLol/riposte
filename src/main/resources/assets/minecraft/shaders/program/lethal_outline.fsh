@@ -9,7 +9,7 @@ out vec4 fragColor;
 void main() {
     vec2 texel = 1.0 / OutSize;
 
-    // Sample the scene
+    // Sample
     vec4 center = texture(DiffuseSampler, texCoord);
     vec4 up    = texture(DiffuseSampler, texCoord + vec2(0.0, 2.0 * texel.y));
     vec4 down  = texture(DiffuseSampler, texCoord + vec2(0.0, -2.0 * texel.y));

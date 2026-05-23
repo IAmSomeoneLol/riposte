@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "WDW",
+    "LWL",
+    " W "
+  ],
+  "key": {
+    "W": {
+      "item": "minecraft:red_wool"
+    },
+    "D": {
+      "item": "minecraft:lead"
+    },
+    "L": {
+      "item": "minecraft:leather"
+    }
+  },
+  "result": {
+    "item": "riposte:wanderers_cape",
+    "count": 1
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "nIn",
+    "ISI",
+    "nIn"
+  ],
+  "key": {
+    "n": { "item": "minecraft:iron_nugget" },
+    "I": { "item": "minecraft:iron_ingot" },
+    "S": { "item": "minecraft:shield" }
+  },
+  "result": {
+    "item": "riposte:iron_plate",
+    "count": 1
+  }
+}

@@ -127,7 +127,7 @@ public class RiposteClient implements ClientModInitializer {
 				if (isWeapon && CLIENT_CONFIG.particleHeavy) {
 					DefaultParticleType trailType = isHeavyDamage ? Riposte.PARRY_TRAIL : Riposte.PARRY_TRAIL_LIGHT;
 
-					for (int i = 0; i < 15; i++) {
+					for (int i = 0; i < 18; i++) {
 						double vx = (random.nextDouble() - 0.5) * 3.5;
 						double vy = (random.nextDouble() - 0.5) * 3.5;
 						double vz = (random.nextDouble() - 0.5) * 3.5;
@@ -158,6 +158,24 @@ public class RiposteClient implements ClientModInitializer {
 					var capability = io.wispforest.accessories.api.AccessoriesCapability.get(client.player);
 					if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
 						data.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
+					}
+
+					ItemStack stack = client.player.getMainHandStack();
+					boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
+
+					String[] weaponAnims = {"parry_weapon", "parry_weapon1", "parry_weapon2"};
+					String[] fistAnims = {"parry_fist", "parry_fist1", "parry_fist2"};
+					String animName = isWeapon ? weaponAnims[random.nextInt(3)] : fistAnims[random.nextInt(3)];
+
+					var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
+					if (animation != null) {
+						var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
+						if (animationContainer != null) {
+							var keyframePlayer = new KeyframeAnimationPlayer(animation);
+							keyframePlayer.setFirstPersonMode(FirstPersonMode.VANILLA);
+							keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
+							animationContainer.setAnimation(keyframePlayer);
+						}
 					}
 				}
 			});
@@ -299,7 +317,7 @@ public class RiposteClient implements ClientModInitializer {
 				ItemStack stack = client.player.getMainHandStack();
 				boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
 
-				String animName = isWeapon ? "parry_weapon" : "parry_fist";
+				String animName = isWeapon ? "parry_weapon_ready" : "parry_fist_ready";
 				var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
 
 				if (animation != null) {

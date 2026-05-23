@@ -16,7 +16,7 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
 
     private final LinkedList<Vec3d> trailHistory = new LinkedList<>();
     private final int maxTrailLength = 80;
-    private final float baseSize = 0.035f; // Updated size as requested!
+    private final float baseSize = 0.035f;
     private final double dotSpacing = 0.15;
     private final boolean isHeavy;
 

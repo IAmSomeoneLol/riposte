@@ -26,7 +26,7 @@ public class RiposteClientConfig extends Config {
         BLACK
     }
 
-    // --- NEW: 9-Point HUD Anchor System ---
+
     public enum AnchorPoint {
         TOP_LEFT, TOP_CENTER, TOP_RIGHT,
         CENTER_LEFT, CENTER, CENTER_RIGHT,
@@ -36,7 +36,7 @@ public class RiposteClientConfig extends Config {
     public ExecutionMode parryActivation = ExecutionMode.KEYBIND;
 
     public ConfigGroup iconCooldownGroup = new ConfigGroup("iconCooldown");
-    public AnchorPoint iconAnchor = AnchorPoint.BOTTOM_CENTER; // The new anchor setting!
+    public AnchorPoint iconAnchor = AnchorPoint.BOTTOM_CENTER;
     public IconMode iconMode = IconMode.STATIC;
     public int xOffset = 100;
     public int yOffset = -12;

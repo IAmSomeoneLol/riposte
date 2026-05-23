@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " ss",
+    " ww",
+    "LLL"
+  ],
+  "key": {
+    "s": { "item": "minecraft:string" },
+    "w": { "tag": "minecraft:wool" },
+    "L": { "item": "minecraft:leather" }
+  },
+  "result": {
+    "item": "riposte:leather_sock",
+    "count": 1
+  }
+}

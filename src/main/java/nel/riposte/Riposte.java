@@ -11,10 +11,16 @@ import nel.riposte.item.RiposteAccessoryItem;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.LootPool;
+import net.minecraft.loot.LootTables;
+import net.minecraft.loot.condition.RandomChanceLootCondition;
+import net.minecraft.loot.entry.ItemEntry;
+import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
 import net.minecraft.registry.Registries;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.particle.DefaultParticleType;
@@ -128,6 +134,71 @@ public class Riposte implements ModInitializer {
 						1.0,
 						EntityAttributeModifier.Operation.ADDITION
 				);
+			}
+		});
+
+		// LOOT TABLE GENERATION
+		LootTableEvents.MODIFY.register((resourceManager, lootManager, id, tableBuilder, source) -> {
+
+			//Iron Plate: Villages, Stronghold, Ruined Portal (15% chance)
+			if (id.equals(LootTables.VILLAGE_WEAPONSMITH_CHEST) || id.equals(LootTables.VILLAGE_ARMORER_CHEST) ||
+					id.equals(LootTables.VILLAGE_TOOLSMITH_CHEST) || id.equals(LootTables.STRONGHOLD_CORRIDOR_CHEST) ||
+					id.equals(LootTables.RUINED_PORTAL_CHEST)) {
+				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
+						.conditionally(RandomChanceLootCondition.builder(0.15f))
+						.with(ItemEntry.builder(IRON_PLATE)).build());
+			}
+
+			//Crest of the Void: End City (5% chance)
+			if (id.equals(LootTables.END_CITY_TREASURE_CHEST)) {
+				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
+						.conditionally(RandomChanceLootCondition.builder(0.05f))
+						.with(ItemEntry.builder(CREST_OF_THE_VOID)).build());
+			}
+
+			// Cobalt Plate: Stronghold, End City, Ancient City (5% chance)
+			if (id.equals(LootTables.STRONGHOLD_CORRIDOR_CHEST) || id.equals(LootTables.STRONGHOLD_CROSSING_CHEST) ||
+					id.equals(LootTables.END_CITY_TREASURE_CHEST) || id.equals(LootTables.ANCIENT_CITY_CHEST)) {
+				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
+						.conditionally(RandomChanceLootCondition.builder(0.05f))
+						.with(ItemEntry.builder(COBALT_PLATE)).build());
+			}
+
+			// Brain Chip: Deep Dark/Ancient City (8% chance)
+			if (id.equals(LootTables.ANCIENT_CITY_CHEST)) {
+				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
+						.conditionally(RandomChanceLootCondition.builder(0.08f))
+						.with(ItemEntry.builder(BRAIN_CHIP)).build());
+			}
+
+			// Ender Dragon Scale: End Dimension / End City (5% chance)
+			if (id.equals(LootTables.END_CITY_TREASURE_CHEST)) {
+				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
+						.conditionally(RandomChanceLootCondition.builder(0.05f))
+						.with(ItemEntry.builder(ENDER_DRAGON_SCALE)).build());
+			}
+
+			// Bloodring & Wanderer's Cape: "Any Loot" Major Treasure Chests (3% chance)
+			Identifier[] genericTreasureChests = new Identifier[]{
+					LootTables.SIMPLE_DUNGEON_CHEST, LootTables.ABANDONED_MINESHAFT_CHEST,
+					LootTables.DESERT_PYRAMID_CHEST, LootTables.JUNGLE_TEMPLE_CHEST,
+					LootTables.BURIED_TREASURE_CHEST, LootTables.SHIPWRECK_TREASURE_CHEST,
+					LootTables.ANCIENT_CITY_CHEST, LootTables.END_CITY_TREASURE_CHEST,
+					LootTables.BASTION_TREASURE_CHEST, LootTables.STRONGHOLD_CORRIDOR_CHEST
+			};
+
+			for (Identifier tableId : genericTreasureChests) {
+				if (id.equals(tableId)) {
+					// Bloodring
+					tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
+							.conditionally(RandomChanceLootCondition.builder(0.03f))
+							.with(ItemEntry.builder(EVERLASTING_BLOODRING)).build());
+
+					// Wanderer's Cape
+					tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
+							.conditionally(RandomChanceLootCondition.builder(0.03f))
+							.with(ItemEntry.builder(WANDERERS_CAPE)).build());
+				}
 			}
 		});
 	}

@@ -3,13 +3,13 @@
 	"id": "riposte",
 	"version": "${version}",
 	"name": "Riposte",
-	"description": "Yet another boring Parry mod.",
+	"description": "Yet another boring Parry mod. (recreation from Terramity of Essence of Parry - Fabric port)",
 	"authors": [
 		"NelA470"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/IAmSomeoneLol/riposte"
 	},
 	"license": "CC0-1.0",
 	"icon": "assets/riposte/icon.png",

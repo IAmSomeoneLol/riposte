@@ -35,14 +35,14 @@ public abstract class CameraMixin {
         float upMove = 0f;
         float rightMove = 0f;
 
-        // 1. RECOIL LOGIC (Smooth Directional Kick)
+
         if (RiposteClient.CLIENT_CONFIG.cameraRecoil && timeSince < RiposteClient.CLIENT_CONFIG.recoilDurationMs) {
             float progress = (float) timeSince / RiposteClient.CLIENT_CONFIG.recoilDurationMs;
             float ease = (float) Math.pow(1.0 - progress, 3);
             finalPitchOffset -= RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
         }
 
-        // 2. SHAKE & PUSHBACK LOGIC (Physical Translation)
+
         if (RiposteClient.CLIENT_CONFIG.cameraShake && timeSince < 250) {
             float progress = (float) timeSince / 250f;
             float fade = Math.max(0.0f, 1.0f - progress);
@@ -57,15 +57,14 @@ public abstract class CameraMixin {
             rightMove = noiseX * RiposteClient.CLIENT_CONFIG.cameraWalkAmplitude * fade;
             upMove = noiseY * RiposteClient.CLIENT_CONFIG.cameraWalkAmplitude * fade;
 
-            // Negative value moves the camera backwards!
+
             forwardMove = -RiposteClient.CLIENT_CONFIG.cameraPushback * fade;
         }
 
-        // Apply physical pushback and walk in BOTH First and Third Person
-        // Parameter 1: Forward/Back | Parameter 2: Up/Down | Parameter 3: Left/Right
+
         this.moveBy(forwardMove, upMove, rightMove);
 
-        // Apply visual rotation shake
+
         this.setRotation(this.yaw + finalYawOffset, this.pitch + finalPitchOffset);
     }
 }

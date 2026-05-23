@@ -29,19 +29,18 @@ public class HeldItemRendererMixin {
                     .get(new Identifier(Riposte.MOD_ID, "animation"));
 
             if (animationContainer != null && animationContainer.isActive()) {
-                // Get the rotation from your JSON bone named "right_arm"
+
                 Vec3f rotation = animationContainer.get3DTransform("right_arm", TransformType.ROTATION, tickDelta, new Vec3f(0, 0, 0));
                 Vec3f position = animationContainer.get3DTransform("right_arm", TransformType.POSITION, tickDelta, new Vec3f(0, 0, 0));
 
-                // 1. Move the pivot to the shoulder (approximate offset)
+
                 matrices.translate(0.0, -0.5, 0.0);
 
-                // 2. Apply your Blockbench Rotations
+
                 matrices.multiply(RotationAxis.POSITIVE_Z.rotation(rotation.getZ()));
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotation(rotation.getY()));
                 matrices.multiply(RotationAxis.POSITIVE_X.rotation(rotation.getX()));
 
-                // 3. Apply position
                 matrices.translate(position.getX() / 16.0, position.getY() / 16.0, position.getZ() / 16.0);
             }
         }
