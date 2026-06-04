@@ -319,6 +319,10 @@ public class RiposteClient implements ClientModInitializer {
 			var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
 
 			if (animationContainer != null) {
+
+				// Kills any currently running animations in the mod's layer instantly
+				animationContainer.setAnimation(null);
+
 				var keyframePlayer = new KeyframeAnimationPlayer(animation);
 
 				keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
