@@ -2,6 +2,7 @@ package nel.riposte.client.mixin;
 
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import nel.riposte.Riposte;
+import nel.riposte.client.RiposteClient;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
@@ -29,8 +30,10 @@ public class PlayerEntityModelMixin {
                 model.hat.visible = false;
                 model.body.visible = false;
                 model.jacket.visible = false;
-                model.leftArm.visible = false;
-                model.leftSleeve.visible = false;
+
+                model.leftArm.visible = RiposteClient.isKickComboActive;
+                model.leftSleeve.visible = RiposteClient.isKickComboActive;
+
                 model.leftLeg.visible = false;
                 model.leftPants.visible = false;
                 model.rightLeg.visible = false;

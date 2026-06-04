@@ -67,6 +67,8 @@ public class RiposteClient implements ClientModInitializer {
 	public static long lastLethalParryTimestamp = 0L;
 	public static boolean shaderActive = false;
 
+	public static boolean isKickComboActive = false;
+
 	@Override
 	public void onInitializeClient() {
 		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new, RegisterType.CLIENT);
@@ -308,9 +310,8 @@ public class RiposteClient implements ClientModInitializer {
 		String animName = requestedAnimName;
 		var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
 
-		// SAFE FALLBACK: If parry_fist1 or parry_fist2 doesn't exist, force it to use parry_fist.
 		if (animation == null && (animName.endsWith("1") || animName.endsWith("2"))) {
-			animName = animName.substring(0, animName.length() - 1); // Trims the '1' or '2'
+			animName = animName.substring(0, animName.length() - 1);
 			animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
 		}
 
@@ -320,9 +321,12 @@ public class RiposteClient implements ClientModInitializer {
 			if (animationContainer != null) {
 				var keyframePlayer = new KeyframeAnimationPlayer(animation);
 
-				// FIXED: Set to THIRD_PERSON_MODEL for proper 1:1 rotation mapping
 				keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
-				keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
+
+				boolean isKick = animName.equals("kick_hit");
+				isKickComboActive = isKick;
+
+				keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, isKick, true, isKick));
 
 				ModifierLayer<IAnimation> offsetLayer = new ModifierLayer<>();
 				offsetLayer.setAnimation(keyframePlayer);
@@ -333,14 +337,23 @@ public class RiposteClient implements ClientModInitializer {
 						Vec3f base = super.get3DTransform(modelName, type, tickDelta, value0);
 
 						if (type == TransformType.POSITION && MinecraftClient.getInstance().options.getPerspective().isFirstPerson()) {
-							if (modelName.equals("rightArm") || modelName.equals("right_arm") || modelName.equals("rightItem")) {
+
+							if (modelName.equals("rightArm") || modelName.equals("right_arm")) {
 								float maxTick = 14.16f;
 								float currentTick = keyframePlayer.getTick();
 								float animProgress = Math.min(1.0f, Math.max(0.0f, currentTick / maxTick));
 								float easeFactor = (float) Math.sin(animProgress * Math.PI);
 
-								// Dynamic punch depth
 								return new Vec3f(base.getX(), base.getY(), base.getZ() - (6.0f * easeFactor));
+							}
+
+							if (modelName.equals("leftArm") || modelName.equals("left_arm")) {
+								float maxTick = 14.16f;
+								float currentTick = keyframePlayer.getTick();
+								float animProgress = Math.min(1.0f, Math.max(0.0f, currentTick / maxTick));
+								float easeFactor = (float) Math.sin(animProgress * Math.PI);
+
+								return new Vec3f(base.getX() + 6.0f, base.getY() + 2.0f, base.getZ() - (6.0f * easeFactor));
 							}
 						}
 						return base;
