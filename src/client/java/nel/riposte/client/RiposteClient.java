@@ -165,9 +165,9 @@ public class RiposteClient implements ClientModInitializer {
 					ItemStack stack = client.player.getMainHandStack();
 					boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
 
-					String[] weaponAnims = {"parry_weapon", "parry_weapon1", "parry_weapon2"};
+					String[] weaponAnims = {"parry_weapon", "parry_weapon1", "parry_weapon2", "parry_weapon3"};
 					String[] fistAnims = {"parry_fist", "parry_fist1", "parry_fist2"};
-					String animName = isWeapon ? weaponAnims[random.nextInt(3)] : fistAnims[random.nextInt(3)];
+					String animName = isWeapon ? weaponAnims[random.nextInt(4)] : fistAnims[random.nextInt(3)];
 
 					playFirstPersonAnimation((AbstractClientPlayerEntity) client.player, animName);
 				}
@@ -310,7 +310,7 @@ public class RiposteClient implements ClientModInitializer {
 		String animName = requestedAnimName;
 		var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
 
-		if (animation == null && (animName.endsWith("1") || animName.endsWith("2"))) {
+		if (animation == null && (animName.endsWith("1") || animName.endsWith("2") || animName.endsWith("3"))) {
 			animName = animName.substring(0, animName.length() - 1);
 			animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
 		}
