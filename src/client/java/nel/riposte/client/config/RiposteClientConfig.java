@@ -53,7 +53,7 @@ public class RiposteClientConfig extends Config {
 
     public ConfigGroup cameraRecoilGroup = new ConfigGroup("cameraRecoil");
     public boolean cameraRecoil = true;
-    public float recoilIntensity = 12.5f;
+    public float recoilIntensity = 20.0f;
     @ConfigGroup.Pop
     public int recoilDurationMs = 1000;
 
