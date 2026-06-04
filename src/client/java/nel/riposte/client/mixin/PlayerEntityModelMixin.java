@@ -31,8 +31,8 @@ public class PlayerEntityModelMixin {
                 model.body.visible = false;
                 model.jacket.visible = false;
 
-                model.leftArm.visible = RiposteClient.isKickComboActive;
-                model.leftSleeve.visible = RiposteClient.isKickComboActive;
+                model.leftArm.visible = RiposteClient.renderLeftArm;
+                model.leftSleeve.visible = RiposteClient.renderLeftArm;
 
                 model.leftLeg.visible = false;
                 model.leftPants.visible = false;

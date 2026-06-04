@@ -67,7 +67,7 @@ public class RiposteClient implements ClientModInitializer {
 	public static long lastLethalParryTimestamp = 0L;
 	public static boolean shaderActive = false;
 
-	public static boolean isKickComboActive = false;
+	public static boolean renderLeftArm = false;
 
 	@Override
 	public void onInitializeClient() {
@@ -324,9 +324,12 @@ public class RiposteClient implements ClientModInitializer {
 				keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
 
 				boolean isKick = animName.equals("kick_hit");
-				isKickComboActive = isKick;
+				boolean isWeaponAnim = animName.contains("weapon");
 
-				keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, isKick, true, isKick));
+				boolean showLeft = isKick || isWeaponAnim;
+				renderLeftArm = showLeft;
+
+				keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, showLeft, true, showLeft));
 
 				ModifierLayer<IAnimation> offsetLayer = new ModifierLayer<>();
 				offsetLayer.setAnimation(keyframePlayer);
@@ -353,7 +356,11 @@ public class RiposteClient implements ClientModInitializer {
 								float animProgress = Math.min(1.0f, Math.max(0.0f, currentTick / maxTick));
 								float easeFactor = (float) Math.sin(animProgress * Math.PI);
 
-								return new Vec3f(base.getX() + 6.0f, base.getY() + 2.0f, base.getZ() - (6.0f * easeFactor));
+								if (isKick) {
+									return new Vec3f(base.getX() + 6.0f, base.getY() + 2.0f, base.getZ() - (6.0f * easeFactor));
+								} else {
+									return new Vec3f(base.getX(), base.getY(), base.getZ() - (6.0f * easeFactor));
+								}
 							}
 						}
 						return base;
