@@ -167,16 +167,7 @@ public class RiposteClient implements ClientModInitializer {
 					String[] fistAnims = {"parry_fist", "parry_fist1", "parry_fist2"};
 					String animName = isWeapon ? weaponAnims[random.nextInt(3)] : fistAnims[random.nextInt(3)];
 
-					var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
-					if (animation != null) {
-						var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
-						if (animationContainer != null) {
-							var keyframePlayer = new KeyframeAnimationPlayer(animation);
-							keyframePlayer.setFirstPersonMode(FirstPersonMode.VANILLA);
-							keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
-							animationContainer.setAnimation(keyframePlayer);
-						}
-					}
+					playFirstPersonAnimation((AbstractClientPlayerEntity) client.player, animName);
 				}
 			});
 		});
@@ -187,20 +178,7 @@ public class RiposteClient implements ClientModInitializer {
 					ParryData data = (ParryData) client.player;
 					data.setSuccessfulComboTimestamp(System.currentTimeMillis());
 
-					var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, "kick_hit"));
-					if (animation != null) {
-						ModifierLayer<IAnimation> animationContainer =
-								(ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
-
-						if (animationContainer != null) {
-							var keyframePlayer = new KeyframeAnimationPlayer(animation);
-
-							keyframePlayer.setFirstPersonMode(FirstPersonMode.VANILLA);
-							keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
-
-							animationContainer.setAnimation(keyframePlayer);
-						}
-					}
+					playFirstPersonAnimation((AbstractClientPlayerEntity) client.player, "kick_hit");
 				}
 			});
 		});
@@ -318,53 +296,59 @@ public class RiposteClient implements ClientModInitializer {
 				boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
 
 				String animName = isWeapon ? "parry_weapon_ready" : "parry_fist_ready";
-				var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
-
-				if (animation != null) {
-					var animationContainer = (ModifierLayer<IAnimation>)
-							PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
-
-					if (animationContainer != null) {
-						var keyframePlayer = new KeyframeAnimationPlayer(animation);
-
-						keyframePlayer.setFirstPersonMode(FirstPersonMode.VANILLA);
-						keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
-
-						ModifierLayer<IAnimation> offsetLayer = new ModifierLayer<>();
-						offsetLayer.setAnimation(keyframePlayer);
-
-						offsetLayer.addModifierLast(new AbstractModifier() {
-							@Override
-							public Vec3f get3DTransform(String modelName, TransformType type, float tickDelta, Vec3f value0) {
-								Vec3f base = super.get3DTransform(modelName, type, tickDelta, value0);
-
-								if (type == TransformType.POSITION && MinecraftClient.getInstance().options.getPerspective().isFirstPerson()) {
-									if (modelName.equals("rightArm") || modelName.equals("right_arm") || modelName.equals("rightItem")) {
-
-										float maxTick = 14.16f;
-										float currentTick = keyframePlayer.getTick();
-										float animProgress = Math.min(1.0f, Math.max(0.0f, currentTick / maxTick));
-
-										float easeFactor = (float) Math.sin(animProgress * Math.PI);
-
-										float offsetX = 0f;
-										float offsetY = 0f;
-										float offsetZ = -6.0f * easeFactor;
-
-										return new Vec3f(base.getX() + offsetX, base.getY() + offsetY, base.getZ() + offsetZ);
-									}
-								}
-								return base;
-							}
-						});
-
-						animationContainer.setAnimation(offsetLayer);
-					}
-				}
+				playFirstPersonAnimation((AbstractClientPlayerEntity) client.player, animName);
 
 				return true;
 			}
 		}
 		return false;
+	}
+
+	private static void playFirstPersonAnimation(AbstractClientPlayerEntity player, String requestedAnimName) {
+		String animName = requestedAnimName;
+		var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
+
+		// SAFE FALLBACK: If parry_fist1 or parry_fist2 doesn't exist, force it to use parry_fist.
+		if (animation == null && (animName.endsWith("1") || animName.endsWith("2"))) {
+			animName = animName.substring(0, animName.length() - 1); // Trims the '1' or '2'
+			animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
+		}
+
+		if (animation != null) {
+			var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
+
+			if (animationContainer != null) {
+				var keyframePlayer = new KeyframeAnimationPlayer(animation);
+
+				// FIXED: Set to THIRD_PERSON_MODEL for proper 1:1 rotation mapping
+				keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
+				keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, false, true, false));
+
+				ModifierLayer<IAnimation> offsetLayer = new ModifierLayer<>();
+				offsetLayer.setAnimation(keyframePlayer);
+
+				offsetLayer.addModifierLast(new AbstractModifier() {
+					@Override
+					public Vec3f get3DTransform(String modelName, TransformType type, float tickDelta, Vec3f value0) {
+						Vec3f base = super.get3DTransform(modelName, type, tickDelta, value0);
+
+						if (type == TransformType.POSITION && MinecraftClient.getInstance().options.getPerspective().isFirstPerson()) {
+							if (modelName.equals("rightArm") || modelName.equals("right_arm") || modelName.equals("rightItem")) {
+								float maxTick = 14.16f;
+								float currentTick = keyframePlayer.getTick();
+								float animProgress = Math.min(1.0f, Math.max(0.0f, currentTick / maxTick));
+								float easeFactor = (float) Math.sin(animProgress * Math.PI);
+
+								// Dynamic punch depth
+								return new Vec3f(base.getX(), base.getY(), base.getZ() - (6.0f * easeFactor));
+							}
+						}
+						return base;
+					}
+				});
+
+				animationContainer.setAnimation(offsetLayer);
+			}
+		}
 	}
 }

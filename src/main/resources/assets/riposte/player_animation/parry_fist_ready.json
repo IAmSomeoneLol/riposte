@@ -2,86 +2,67 @@
 	"format_version": "1.8.0",
 	"animations": {
 		"parry_fist_ready": {
-			"animation_length": 0.5,
+			"animation_length": 0.55,
+			"override_previous_animation": true,
 			"bones": {
 				"right_arm": {
 					"rotation": {
 						"0.0": {
-							"post": {
-								"vector": [-20, 0, 0]
-							},
-							"lerp_mode": "catmullrom"
+							"vector": [-20, 0, 0]
 						},
-						"0.0417": {
-							"vector": [-52.5, 0, 0]
+						"0.05": {
+							"vector": [-53, 0, 0]
 						},
-						"0.0833": {
-							"vector": [-87.2941, -22.4774, -1.0351]
+						"0.1": {
+							"vector": [-87, -22, -1]
 						},
-						"0.1667": {
-							"vector": [-126.9489, -43.666, 21.6031],
+						"0.15": {
+							"vector": [-127, -44, 22],
 							"easing": "linear"
 						},
-						"0.3333": {
-							"vector": [-126.9489, -43.666, 21.6031],
+						"0.35": {
+							"vector": [-127, -44, 22],
 							"easing": "linear"
 						},
-						"0.4167": {
-							"vector": [-87.2941, -22.4774, -1.0351]
+						"0.4": {
+							"vector": [-87, -22, -1]
 						},
-						"0.4583": {
-							"vector": [-52.5, 0, 0]
+						"0.45": {
+							"vector": [-53, 0, 0]
 						},
 						"0.5": {
-							"pre": {
-								"vector": [-20, 0, 0]
-							},
-							"post": {
-								"vector": [-20, 0, 0]
-							},
-							"lerp_mode": "catmullrom"
+							"vector": [-20, 0, 0]
 						}
 					},
 					"position": {
 						"0.0": {
-							"post": {
-								"vector": [0, 0, 0]
-							},
-							"lerp_mode": "catmullrom"
+							"vector": [0, 0, 0]
 						},
-						"0.0417": {
+						"0.05": {
 							"vector": [1, -1, -1]
 						},
-						"0.0833": {
+						"0.1": {
 							"vector": [2, -1, -4]
 						},
-						"0.1667": {
+						"0.15": {
 							"vector": [2, -4, -7],
 							"easing": "linear"
 						},
-						"0.2083": [2, -4.5, -7],
 						"0.25": {
 							"vector": [2, -5, -7]
 						},
-						"0.2917": [2, -4.5, -7],
-						"0.3333": {
+						"0.35": {
 							"vector": [2, -4, -7],
 							"easing": "linear"
 						},
-						"0.4167": {
+						"0.4": {
 							"vector": [2, -1, -4]
 						},
-						"0.4583": {
+						"0.45": {
 							"vector": [1, -1, -1]
 						},
 						"0.5": {
-							"pre": {
-								"vector": [0, 0, 0]
-							},
-							"post": {
-								"vector": [0, 0, 0]
-							},
-							"lerp_mode": "catmullrom"
+							"vector": [0, 0, 0]
 						}
 					}
 				}
