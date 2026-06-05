@@ -12,6 +12,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Random;
+
 @Mixin(Camera.class)
 public abstract class CameraMixin {
 
@@ -39,7 +41,16 @@ public abstract class CameraMixin {
         if (RiposteClient.CLIENT_CONFIG.cameraRecoil && timeSince < RiposteClient.CLIENT_CONFIG.recoilDurationMs) {
             float progress = (float) timeSince / RiposteClient.CLIENT_CONFIG.recoilDurationMs;
             float ease = (float) Math.pow(1.0 - progress, 3);
-            finalPitchOffset -= RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
+
+            // Seed the random with the specific parry timestamp so the direction stays constant for the entire duration of this one bounce
+            Random rand = new Random(data.getSuccessfulParryTimestamp());
+            double angle = rand.nextDouble() * Math.PI * 2.0;
+
+            float yawDir = (float) Math.cos(angle);
+            float pitchDir = (float) Math.sin(angle);
+
+            finalYawOffset += yawDir * RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
+            finalPitchOffset += pitchDir * RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
         }
 
 
