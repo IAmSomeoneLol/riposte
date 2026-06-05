@@ -1,5 +1,6 @@
 package nel.riposte.mixin;
 
+import dev.emi.trinkets.api.TrinketsApi;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -176,8 +177,8 @@ public class PlayerEntityMixin implements ParryData {
                 this.setSuccessfulParryTimestamp(System.currentTimeMillis());
                 this.setLastParriedEntityId(projectile.getId());
 
-                var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
-                if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
+                var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+                if (component != null && component.isEquipped(Riposte.WANDERERS_CAPE)) {
                     this.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
                 }
 

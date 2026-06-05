@@ -1,0 +1,12 @@
+{
+  "entities": [
+    "minecraft:player"
+  ],
+  "slots": [
+    "riposte/parry",
+    "head/hat",
+    "chest/charm",
+    "chest/cape",
+    "hand/ring"
+  ]
+}

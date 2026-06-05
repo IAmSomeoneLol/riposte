@@ -1,8 +1,0 @@
-{
-  "replace": false,
-  "order": 110,
-  "slots": [
-    "riposte:head"
-  ],
-  "icon": "accessories:gui/slot/hat"
-}

@@ -92,6 +92,16 @@
   "accessories.slot.riposte.head": "Head",
   "riposte.client.lethalParryShader": "Lethal Parry Shader",
 
+  "tooltip.riposte.slot.hat": "When in Hat Slot:",
+
+  "trinkets.slot.riposte.parry": "Parry",
+  "trinkets.slot.group.riposte": "Riposte Stats",
+  "trinkets.slot.chest.charm": "Charm",
+  "trinkets.slot.chest.necklace": "Necklace",
+  "trinkets.slot.hand.ring": "Ring",
+  "trinkets.slot.head.hat": "Hat",
+  "tooltip.riposte.slot.cape": "When in Cape Slot:",
+
   "riposte.client.flashScreen": "Flash Screen",
   "riposte.client.screenFlash": "Screen Flash",
   "riposte.client.screenFlashType": "Screen Flash Type",

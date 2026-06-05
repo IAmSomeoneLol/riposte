@@ -1,6 +1,6 @@
 package nel.riposte;
 
-import io.wispforest.accessories.api.AccessoriesCapability;
+import dev.emi.trinkets.api.TrinketsApi;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.damage.DamageTypes;
@@ -38,26 +38,26 @@ public interface ParryData {
 
     default int getCalculatedCooldown(int baseCooldownMs) {
         PlayerEntity player = (PlayerEntity) this;
-        var capability = AccessoriesCapability.get(player);
-        if (capability == null) return baseCooldownMs;
+        var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+        if (component == null) return baseCooldownMs;
 
         double rate = 1.0;
 
-        if (capability.isEquipped(Riposte.IRON_PLATE)) rate += 3.0;
-        if (capability.isEquipped(Riposte.CREST_OF_THE_VOID)) rate += 3.0;
-        if (capability.isEquipped(Riposte.COBALT_PLATE)) rate += 5.0;
+        if (component.isEquipped(Riposte.IRON_PLATE)) rate += 3.0;
+        if (component.isEquipped(Riposte.CREST_OF_THE_VOID)) rate += 3.0;
+        if (component.isEquipped(Riposte.COBALT_PLATE)) rate += 5.0;
 
-        if (capability.isEquipped(Riposte.BRAIN_CHIP)) rate *= 2.0;
+        if (component.isEquipped(Riposte.BRAIN_CHIP)) rate *= 2.0;
 
         return (int) (baseCooldownMs / rate);
     }
 
     default int getCalculatedWindow(int baseWindowMs) {
         PlayerEntity player = (PlayerEntity) this;
-        var capability = AccessoriesCapability.get(player);
-        if (capability == null) return baseWindowMs;
+        var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+        if (component == null) return baseWindowMs;
 
-        if (capability.isEquipped(Riposte.EVERLASTING_BLOODRING)) {
+        if (component.isEquipped(Riposte.EVERLASTING_BLOODRING)) {
             return baseWindowMs * 2;
         }
         return baseWindowMs;
@@ -65,14 +65,14 @@ public interface ParryData {
 
     default boolean canParryDamageType(DamageSource source) {
         PlayerEntity player = (PlayerEntity) this;
-        var capability = AccessoriesCapability.get(player);
-        if (capability == null) return false;
+        var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+        if (component == null) return false;
 
-        if (capability.isEquipped(Riposte.CREST_OF_THE_VOID)) return true;
+        if (component.isEquipped(Riposte.CREST_OF_THE_VOID)) return true;
 
-        if (source.isOf(DamageTypes.FALL) && capability.isEquipped(Riposte.LEATHER_SOCK)) return true;
+        if (source.isOf(DamageTypes.FALL) && component.isEquipped(Riposte.LEATHER_SOCK)) return true;
 
-        boolean hasPlate = capability.isEquipped(Riposte.IRON_PLATE) || capability.isEquipped(Riposte.COBALT_PLATE);
+        boolean hasPlate = component.isEquipped(Riposte.IRON_PLATE) || component.isEquipped(Riposte.COBALT_PLATE);
         if (source.isIn(DamageTypeTags.IS_PROJECTILE) && hasPlate) return true;
 
         return source.getAttacker() instanceof LivingEntity && !source.isIn(DamageTypeTags.IS_PROJECTILE) && !source.isIndirect();
@@ -80,11 +80,11 @@ public interface ParryData {
 
     default boolean canParryProjectiles() {
         PlayerEntity player = (PlayerEntity) this;
-        var capability = AccessoriesCapability.get(player);
-        if (capability == null) return false;
+        var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+        if (component == null) return false;
 
-        if (capability.isEquipped(Riposte.CREST_OF_THE_VOID)) return true;
-        return capability.isEquipped(Riposte.IRON_PLATE) || capability.isEquipped(Riposte.COBALT_PLATE);
+        if (component.isEquipped(Riposte.CREST_OF_THE_VOID)) return true;
+        return component.isEquipped(Riposte.IRON_PLATE) || component.isEquipped(Riposte.COBALT_PLATE);
     }
 
     default void refundParryCooldown(float percentage) {

@@ -1,5 +1,6 @@
 package nel.riposte.mixin;
 
+import dev.emi.trinkets.api.TrinketsApi;
 import nel.riposte.HitstopData;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
@@ -60,8 +61,8 @@ public abstract class LivingEntityMixin implements HitstopData {
     @Inject(method = "takeKnockback", at = @At("HEAD"), cancellable = true)
     private void riposte$cobaltPlateKnockback(double strength, double x, double z, CallbackInfo ci) {
         if ((Object) this instanceof PlayerEntity player) {
-            var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
-            if (capability != null && capability.isEquipped(Riposte.COBALT_PLATE)) {
+            var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+            if (component != null && component.isEquipped(Riposte.COBALT_PLATE)) {
                 ci.cancel();
             }
         }
@@ -72,15 +73,15 @@ public abstract class LivingEntityMixin implements HitstopData {
         float modifiedAmount = amount;
 
         if (source.getAttacker() instanceof PlayerEntity attacker) {
-            var capability = io.wispforest.accessories.api.AccessoriesCapability.get(attacker);
-            if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
+            var component = TrinketsApi.getTrinketComponent(attacker).orElse(null);
+            if (component != null && component.isEquipped(Riposte.WANDERERS_CAPE)) {
                 modifiedAmount *= 1.1f;
             }
         }
 
         if ((Object) this instanceof PlayerEntity victim) {
-            var capability = io.wispforest.accessories.api.AccessoriesCapability.get(victim);
-            if (capability != null && capability.isEquipped(Riposte.EVERLASTING_BLOODRING)) {
+            var component = TrinketsApi.getTrinketComponent(victim).orElse(null);
+            if (component != null && component.isEquipped(Riposte.EVERLASTING_BLOODRING)) {
                 modifiedAmount *= 1.5f;
             }
         }
@@ -106,8 +107,8 @@ public abstract class LivingEntityMixin implements HitstopData {
                 cir.setReturnValue(false);
 
                 int iFrames = 10;
-                var capability = io.wispforest.accessories.api.AccessoriesCapability.get(player);
-                if (capability != null && capability.isEquipped(Riposte.COBALT_PLATE)) {
+                var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+                if (component != null && component.isEquipped(Riposte.COBALT_PLATE)) {
                     iFrames = 20;
                 }
                 player.timeUntilRegen = iFrames;
@@ -176,7 +177,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                     ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, PacketByteBufs.create());
                 }
 
-                if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
+                if (component != null && component.isEquipped(Riposte.WANDERERS_CAPE)) {
                     parryData.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
                 }
 

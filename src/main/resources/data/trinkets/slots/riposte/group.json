@@ -1,0 +1,5 @@
+{
+  "order": 100,
+  "defaultSlot": "parry",
+  "icon": "riposte:gui/slot/parry"
+}

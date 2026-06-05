@@ -1,9 +1,9 @@
 package nel.riposte.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.wispforest.accessories.api.client.AccessoriesRendererRegistry;
-import io.wispforest.accessories.api.client.SimpleAccessoryRenderer;
-import io.wispforest.accessories.api.slot.SlotReference;
+import dev.emi.trinkets.api.client.TrinketRenderer;
+import dev.emi.trinkets.api.client.TrinketRendererRegistry;
+import dev.emi.trinkets.api.TrinketsApi;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration;
 import dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier;
@@ -26,12 +26,8 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.entity.model.EntityModel;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.MiningToolItem;
@@ -89,22 +85,16 @@ public class RiposteClient implements ClientModInitializer {
 				(AbstractClientPlayerEntity player) -> new ModifierLayer<>()
 		);
 
-		SimpleAccessoryRenderer emptyRenderer = new SimpleAccessoryRenderer() {
-			@Override
-			public <M extends LivingEntity> void align(ItemStack stack, SlotReference reference, EntityModel<M> model, MatrixStack matrices) {}
+		TrinketRenderer emptyRenderer = (stack, slotReference, contextModel, matrices, vertexConsumers, light, entity, limbAngle, limbDistance, tickDelta, animationProgress, headYaw, headPitch) -> {};
 
-			@Override
-			public <M extends LivingEntity> void render(ItemStack stack, SlotReference reference, MatrixStack matrices, EntityModel<M> model, VertexConsumerProvider multiBufferSource, int light, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {}
-		};
-
-		AccessoriesRendererRegistry.registerRenderer(Riposte.IRON_PLATE, () -> emptyRenderer);
-		AccessoriesRendererRegistry.registerRenderer(Riposte.LEATHER_SOCK, () -> emptyRenderer);
-		AccessoriesRendererRegistry.registerRenderer(Riposte.CREST_OF_THE_VOID, () -> emptyRenderer);
-		AccessoriesRendererRegistry.registerRenderer(Riposte.COBALT_PLATE, () -> emptyRenderer);
-		AccessoriesRendererRegistry.registerRenderer(Riposte.EVERLASTING_BLOODRING, () -> emptyRenderer);
-		AccessoriesRendererRegistry.registerRenderer(Riposte.WANDERERS_CAPE, () -> emptyRenderer);
-		AccessoriesRendererRegistry.registerRenderer(Riposte.BRAIN_CHIP, () -> emptyRenderer);
-		AccessoriesRendererRegistry.registerRenderer(Riposte.ENDER_DRAGON_SCALE, () -> emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.IRON_PLATE, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.LEATHER_SOCK, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.CREST_OF_THE_VOID, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.COBALT_PLATE, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.EVERLASTING_BLOODRING, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.WANDERERS_CAPE, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.BRAIN_CHIP, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.ENDER_DRAGON_SCALE, emptyRenderer);
 
 		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_VFX_PACKET, (client, handler, buf, responseSender) -> {
 			double px = buf.readDouble();
@@ -157,8 +147,8 @@ public class RiposteClient implements ClientModInitializer {
 					ParryData data = (ParryData) client.player;
 					data.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
-					var capability = io.wispforest.accessories.api.AccessoriesCapability.get(client.player);
-					if (capability != null && capability.isEquipped(Riposte.WANDERERS_CAPE)) {
+					var component = TrinketsApi.getTrinketComponent(client.player).orElse(null);
+					if (component != null && component.isEquipped(Riposte.WANDERERS_CAPE)) {
 						data.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
 					}
 
@@ -320,7 +310,6 @@ public class RiposteClient implements ClientModInitializer {
 
 			if (animationContainer != null) {
 
-				// Kills any currently running animations in the mod's layer instantly
 				animationContainer.setAnimation(null);
 
 				var keyframePlayer = new KeyframeAnimationPlayer(animation);

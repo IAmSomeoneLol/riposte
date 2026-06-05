@@ -1,9 +1,13 @@
 package nel.riposte.item;
 
-import io.wispforest.accessories.api.Accessory;
-import io.wispforest.accessories.api.slot.SlotReference;
+import com.google.common.collect.Multimap;
+import dev.emi.trinkets.api.SlotAttributes;
+import dev.emi.trinkets.api.SlotReference;
+import dev.emi.trinkets.api.TrinketItem;
 import net.minecraft.client.item.TooltipContext;
-import net.minecraft.item.Item;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -11,21 +15,30 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.UUID;
 
-public class RiposteAccessoryItem extends Item implements Accessory {
+public class RiposteAccessoryItem extends TrinketItem {
 
     private final String targetSlot;
+    private final String bonusSlot;
     private final String[] tooltipKeys;
 
-    public RiposteAccessoryItem(Settings settings, String targetSlot, String... tooltipKeys) {
+    public RiposteAccessoryItem(Settings settings, String targetSlot, String bonusSlot, String... tooltipKeys) {
         super(settings);
         this.targetSlot = targetSlot;
+        this.bonusSlot = bonusSlot;
         this.tooltipKeys = tooltipKeys;
     }
 
     @Override
-    public boolean canEquip(ItemStack stack, SlotReference reference) {
-        return reference.slotName().equals(this.targetSlot);
+    public Multimap<EntityAttribute, EntityAttributeModifier> getModifiers(ItemStack stack, SlotReference slot, LivingEntity entity, UUID uuid) {
+        var modifiers = super.getModifiers(stack, slot, entity, uuid);
+
+        if (this.bonusSlot != null && !this.bonusSlot.isEmpty()) {
+            SlotAttributes.addSlotModifier(modifiers, this.bonusSlot, uuid, 1, EntityAttributeModifier.Operation.ADDITION);
+        }
+
+        return modifiers;
     }
 
     @Override
@@ -33,7 +46,6 @@ public class RiposteAccessoryItem extends Item implements Accessory {
         if (this.tooltipKeys.length > 0) {
             tooltip.add(Text.empty());
 
-            // Appends the raw target slot name directly into the translation key
             tooltip.add(Text.translatable("tooltip.riposte.slot." + this.targetSlot).formatted(Formatting.GRAY));
 
             for (String key : tooltipKeys) {

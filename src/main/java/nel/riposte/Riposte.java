@@ -1,10 +1,5 @@
 package nel.riposte;
 
-import io.wispforest.accessories.api.AccessoriesAPI;
-import io.wispforest.accessories.api.Accessory;
-import io.wispforest.accessories.api.attributes.AccessoryAttributeBuilder;
-import io.wispforest.accessories.api.attributes.SlotAttribute;
-import io.wispforest.accessories.api.slot.SlotReference;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
 import nel.riposte.config.RiposteConfig;
 import nel.riposte.item.RiposteAccessoryItem;
@@ -12,10 +7,8 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
-import net.minecraft.item.ItemStack;
 import net.minecraft.loot.LootPool;
 import net.minecraft.loot.LootTables;
 import net.minecraft.loot.condition.RandomChanceLootCondition;
@@ -51,28 +44,28 @@ public class Riposte implements ModInitializer {
 	public static final Identifier LETHAL_PARRY_ID = new Identifier(MOD_ID, "lethal_parry");
 	public static final SoundEvent LETHAL_PARRY_SOUND = SoundEvent.of(LETHAL_PARRY_ID);
 
-	public static final Item IRON_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
+	public static final Item IRON_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
 			"tooltip.riposte.passive", "tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3");
 
-	public static final Item LEATHER_SOCK = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
+	public static final Item LEATHER_SOCK = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
 			"tooltip.riposte.passive", "tooltip.riposte.passive.fall");
 
-	public static final Item CREST_OF_THE_VOID = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
+	public static final Item CREST_OF_THE_VOID = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
 			"tooltip.riposte.passive", "tooltip.riposte.passive.all", "tooltip.riposte.modifier.recharge_rate_3");
 
-	public static final Item COBALT_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry",
+	public static final Item COBALT_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
 			"tooltip.riposte.passive", "tooltip.riposte.passive.projectile", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time");
 
-	public static final Item EVERLASTING_BLOODRING = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "ring",
+	public static final Item EVERLASTING_BLOODRING = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "ring", null,
 			"tooltip.riposte.passive.bloodring_1", "tooltip.riposte.passive.bloodring_2", "tooltip.riposte.warning.no_stack");
 
-	public static final Item WANDERERS_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "necklace",
+	public static final Item WANDERERS_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "cape", null,
 			"tooltip.riposte.passive.charge_meter", "tooltip.riposte.passive.damage_dealt");
 
-	public static final Item BRAIN_CHIP = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "head",
+	public static final Item BRAIN_CHIP = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "hat", null,
 			"tooltip.riposte.modifier.recharge_rate_100");
 
-	public static final Item ENDER_DRAGON_SCALE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "charm",
+	public static final Item ENDER_DRAGON_SCALE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "charm", "head/hat",
 			"tooltip.riposte.passive.head_slot", "tooltip.riposte.warning.no_stack");
 
 	public static final Identifier PARRY_SYNC_PACKET = new Identifier(MOD_ID, "parry_sync");
@@ -125,22 +118,7 @@ public class Riposte implements ModInitializer {
 			});
 		});
 
-		AccessoriesAPI.registerAccessory(ENDER_DRAGON_SCALE, new Accessory() {
-			@Override
-			public void getDynamicModifiers(ItemStack stack, SlotReference reference, AccessoryAttributeBuilder builder) {
-				builder.addExclusive(
-						SlotAttribute.getSlotAttribute("riposte:head"),
-						new Identifier(MOD_ID, "dragon_scale_head_slot"),
-						1.0,
-						EntityAttributeModifier.Operation.ADDITION
-				);
-			}
-		});
-
-		// LOOT TABLE GENERATION
 		LootTableEvents.MODIFY.register((resourceManager, lootManager, id, tableBuilder, source) -> {
-
-			//Iron Plate: Villages, Stronghold, Ruined Portal (15% chance)
 			if (id.equals(LootTables.VILLAGE_WEAPONSMITH_CHEST) || id.equals(LootTables.VILLAGE_ARMORER_CHEST) ||
 					id.equals(LootTables.VILLAGE_TOOLSMITH_CHEST) || id.equals(LootTables.STRONGHOLD_CORRIDOR_CHEST) ||
 					id.equals(LootTables.RUINED_PORTAL_CHEST)) {
@@ -149,14 +127,12 @@ public class Riposte implements ModInitializer {
 						.with(ItemEntry.builder(IRON_PLATE)).build());
 			}
 
-			//Crest of the Void: End City (5% chance)
 			if (id.equals(LootTables.END_CITY_TREASURE_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 						.conditionally(RandomChanceLootCondition.builder(0.05f))
 						.with(ItemEntry.builder(CREST_OF_THE_VOID)).build());
 			}
 
-			// Cobalt Plate: Stronghold, End City, Ancient City (5% chance)
 			if (id.equals(LootTables.STRONGHOLD_CORRIDOR_CHEST) || id.equals(LootTables.STRONGHOLD_CROSSING_CHEST) ||
 					id.equals(LootTables.END_CITY_TREASURE_CHEST) || id.equals(LootTables.ANCIENT_CITY_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
@@ -164,21 +140,18 @@ public class Riposte implements ModInitializer {
 						.with(ItemEntry.builder(COBALT_PLATE)).build());
 			}
 
-			// Brain Chip: Deep Dark/Ancient City (8% chance)
 			if (id.equals(LootTables.ANCIENT_CITY_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 						.conditionally(RandomChanceLootCondition.builder(0.08f))
 						.with(ItemEntry.builder(BRAIN_CHIP)).build());
 			}
 
-			// Ender Dragon Scale: End Dimension / End City (5% chance)
 			if (id.equals(LootTables.END_CITY_TREASURE_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 						.conditionally(RandomChanceLootCondition.builder(0.05f))
 						.with(ItemEntry.builder(ENDER_DRAGON_SCALE)).build());
 			}
 
-			// Bloodring & Wanderer's Cape: "Any Loot" Major Treasure Chests (3% chance)
 			Identifier[] genericTreasureChests = new Identifier[]{
 					LootTables.SIMPLE_DUNGEON_CHEST, LootTables.ABANDONED_MINESHAFT_CHEST,
 					LootTables.DESERT_PYRAMID_CHEST, LootTables.JUNGLE_TEMPLE_CHEST,
@@ -189,12 +162,10 @@ public class Riposte implements ModInitializer {
 
 			for (Identifier tableId : genericTreasureChests) {
 				if (id.equals(tableId)) {
-					// Bloodring
 					tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 							.conditionally(RandomChanceLootCondition.builder(0.03f))
 							.with(ItemEntry.builder(EVERLASTING_BLOODRING)).build());
 
-					// Wanderer's Cape
 					tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 							.conditionally(RandomChanceLootCondition.builder(0.03f))
 							.with(ItemEntry.builder(WANDERERS_CAPE)).build());

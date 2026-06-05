@@ -7,25 +7,19 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
-	// Official Fzzy Config Maven
 	maven { url "https://maven.fzzyhmstrs.me/" }
-
-	// Required by Accessories Wiki
-	maven { url 'https://maven.wispforest.io/releases' }
-	maven { url 'https://maven.su5ed.dev/releases' }
 	maven { url 'https://maven.fabricmc.net' }
 	maven { url 'https://maven.shedaniel.me/' }
-
-	// Official Mod Menu Maven
 	maven { url "https://maven.terraformersmc.com/releases/" }
-
-	// Official Player Animator Maven
 	maven { url "https://maven.kosmx.dev/" }
-
-	// Modrinth Maven
 	maven {
 		name = "Modrinth"
 		url = "https://api.modrinth.com/m2"
+	}
+	// Required by Trinkets to download the Cardinal Components API
+	maven {
+		name = "Ladysnake"
+		url = "https://maven.ladysnake.org/releases"
 	}
 }
 
@@ -41,20 +35,15 @@ loom {
 }
 
 dependencies {
-	// Core Modding Environment
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	// Fzzy Config & Accessories
 	modImplementation "me.fzzyhmstrs:fzzy_config:${project.fzzy_config_version}"
-	modImplementation "io.wispforest:accessories-fabric:${project.accessories_version}"
+	modImplementation "dev.emi:trinkets:${project.trinkets_version}"
 
-	// Mod Menu
 	modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
-
-	// Player Animator
 	modImplementation "dev.kosmx.player-anim:player-animation-lib-fabric:${project.player_animator_version}"
 }
 
