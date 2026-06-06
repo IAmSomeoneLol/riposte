@@ -23,6 +23,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
@@ -35,6 +36,8 @@ import net.minecraft.item.TridentItem;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import org.lwjgl.glfw.GLFW;
 import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
@@ -190,6 +193,15 @@ public class RiposteClient implements ClientModInitializer {
 					attemptParry(client);
 				}
 			}
+		});
+
+		UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+			if (world.isClient && hand == Hand.MAIN_HAND && CLIENT_CONFIG.parryActivation == RiposteClientConfig.ExecutionMode.CAMERA) {
+				if (attemptParry(MinecraftClient.getInstance())) {
+					return ActionResult.SUCCESS;
+				}
+			}
+			return ActionResult.PASS;
 		});
 
 		HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
