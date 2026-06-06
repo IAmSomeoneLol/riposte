@@ -1,9 +1,47 @@
 # Riposte
+Riposte is another Parry Mod that is based off a video titled "[Essence of PARRY](https://www.youtube.com/watch?v=9NPbOl0LGds)" a knock-off standalone variant made for the Fabric versiony, done under a Comission request.
 
-## Setup
 
-For setup instructions, please see the [Fabric Documentation page](https://docs.fabricmc.net/develop/getting-started/creating-a-project#setting-up) related to the IDE that you are using.
 
-## License
+## Dependencies
+As of now only mc1.20.1v Fabric loader is supported.
 
-This template is available under the CC0 license. Feel free to learn from it and incorporate it in your own projects.
+- [Fabric API](https://modrinth.com/mod/fabric-api)
+- [FZFY Config](https://modrinth.com/mod/fzzy-config)
+- [Trinkets](https://modrinth.com/mod/trinkets)
+- [Player Animator](https://modrinth.com/mod/player-animator)
+- [Mod Menu](https://modrinth.com/mod/modmenu) (Used for Accessing the config client side)
+### Note
+The mod will Recieve small time support (Bug fixes, Visual Effects, Animations,..) overtime until it's perfected and be less clunky than it is now.
+
+Clearly an idea inspired by another creator, I will not gatekeep the code and it is published publicly on [Github](https://github.com/IAmSomeoneLol/riposte/tree/master).
+
+## [The Bare Minimum License (BML) v1.0](https://github.com/BareMinimumStudios/bare-minimum-license#the-bare-minimum-license-bml-v10)
+
+"This license does the bare minimum to protect you, but at least it does something."
+
+Copyright (c)
+
+This Work may include both code (software, scripts, binaries) and assets (artwork, textures, models, sounds, music, documentation). The following terms apply:
+
+Attribution You must keep this copyright notice and license text in all copies or substantial portions of the Work.
+
+Code Permissions You may freely use, copy, modify, merge, publish, distribute, sublicense, and/or sell the code portions of this Work, provided that you comply with the Anti-Reposting clause below.
+
+Asset Restrictions Assets included in this Work (artwork, textures, models, sounds, music, documentation) may only be used as part of this Work. They may not be extracted, republished, modified, mirrored, or redistributed separately without the express written permission of the copyright holder.
+
+Exception: Non-commercial community uses such as screenshots, gameplay videos, reviews, thumbnails, commentary, and fan art are permitted, provided they include attribution where reasonable and do not claim to be official works.
+
+Anti-Reposting You may not redistribute this Work in substantially unmodified form on third-party modding platforms, websites, or repositories (including but not limited to CurseForge, Modrinth, 9Minecraft, and their mirrors) unless you are the copyright holder or have explicit written permission.
+
+This restriction does not apply to derivative works, forks, or independent projects that incorporate portions of the code under the terms of this License.
+
+Patent Protection Each contributor grants a perpetual, worldwide, non-exclusive, royalty-free, irrevocable patent license to make, use, and distribute the code portions of this Work. If you initiate patent litigation claiming that the Work infringes a patent, your rights under this License terminate immediately.
+
+Contributions By submitting code, assets, or other materials to this Work, you agree that your contributions are licensed under the Bare Minimum License.
+
+Modpacks You may include this Work in publicly distributed modpacks provided you comply with Attribution (Section 1) and Anti-Reposting (Section 4). Modpacks may not extract or reuse assets outside of this Work.
+
+Trademarks & Naming You may not use the original project name, branding, or trademarks in a way that suggests your fork, port, or derivative is the official version. Reasonable descriptive uses (e.g., "Fork of ", ": Director’s Cut", or "Unofficial Port") are permitted, provided they clearly distinguish your project from the original.
+
+Warranty Disclaimer THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS IN THE WORK.

@@ -32,5 +32,17 @@
     "sounds": [
       "riposte:cooldown_charge_finish"
     ]
+  },
+  "parry_fist_ready": {
+    "category": "player",
+    "sounds": [
+      "riposte:parry_fist_ready"
+    ]
+  },
+  "parry_weapon_ready": {
+    "category": "player",
+    "sounds": [
+      "riposte:parry_weapon_ready"
+    ]
   }
 }

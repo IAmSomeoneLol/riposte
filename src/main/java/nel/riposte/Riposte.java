@@ -9,6 +9,10 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.SwordItem;
+import net.minecraft.item.MiningToolItem;
+import net.minecraft.item.TridentItem;
 import net.minecraft.loot.LootPool;
 import net.minecraft.loot.LootTables;
 import net.minecraft.loot.condition.RandomChanceLootCondition;
@@ -18,6 +22,7 @@ import net.minecraft.registry.Registries;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.registry.Registry;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
@@ -43,6 +48,12 @@ public class Riposte implements ModInitializer {
 
 	public static final Identifier LETHAL_PARRY_ID = new Identifier(MOD_ID, "lethal_parry");
 	public static final SoundEvent LETHAL_PARRY_SOUND = SoundEvent.of(LETHAL_PARRY_ID);
+
+	public static final Identifier PARRY_FIST_READY_ID = new Identifier(MOD_ID, "parry_fist_ready");
+	public static final SoundEvent PARRY_FIST_READY_SOUND = SoundEvent.of(PARRY_FIST_READY_ID);
+
+	public static final Identifier PARRY_WEAPON_READY_ID = new Identifier(MOD_ID, "parry_weapon_ready");
+	public static final SoundEvent PARRY_WEAPON_READY_SOUND = SoundEvent.of(PARRY_WEAPON_READY_ID);
 
 	public static final Item IRON_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
 			"tooltip.riposte.passive", "tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3");
@@ -86,6 +97,8 @@ public class Riposte implements ModInitializer {
 		Registry.register(Registries.SOUND_EVENT, NORMAL_PARRY_ID, NORMAL_PARRY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, KICK_COMBO_ID, KICK_COMBO_SOUND);
 		Registry.register(Registries.SOUND_EVENT, LETHAL_PARRY_ID, LETHAL_PARRY_SOUND);
+		Registry.register(Registries.SOUND_EVENT, PARRY_FIST_READY_ID, PARRY_FIST_READY_SOUND);
+		Registry.register(Registries.SOUND_EVENT, PARRY_WEAPON_READY_ID, PARRY_WEAPON_READY_SOUND);
 
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "iron_plate"), IRON_PLATE);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "leather_sock"), LEATHER_SOCK);
@@ -113,6 +126,16 @@ public class Riposte implements ModInitializer {
 					int currentCooldown = parryData.getCalculatedCooldown(CONFIG.parryCooldownMs);
 					if (parryData.canParry(currentCooldown)) {
 						parryData.setParryTimestamp(System.currentTimeMillis());
+
+						ItemStack stack = player.getMainHandStack();
+						Item item = stack.getItem();
+						boolean isWeapon = item instanceof SwordItem || item instanceof MiningToolItem || item instanceof TridentItem;
+
+						// Adds the exact ±0.3 random pitch variance you requested
+						float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
+						SoundEvent soundToPlay = isWeapon ? PARRY_WEAPON_READY_SOUND : PARRY_FIST_READY_SOUND;
+
+						player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
 					}
 				}
 			});
