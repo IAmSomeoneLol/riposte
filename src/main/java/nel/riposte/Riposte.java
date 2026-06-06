@@ -87,7 +87,6 @@ public class Riposte implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		LOGGER.info("Initializing Riposte Parry Mechanics...");
 		CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteConfig::new);
 
 		Registry.register(Registries.PARTICLE_TYPE, new Identifier(MOD_ID, "parry_trail"), PARRY_TRAIL);
@@ -131,11 +130,10 @@ public class Riposte implements ModInitializer {
 						Item item = stack.getItem();
 						boolean isWeapon = item instanceof SwordItem || item instanceof MiningToolItem || item instanceof TridentItem;
 
-						// Adds the exact ±0.3 random pitch variance you requested
 						float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
 						SoundEvent soundToPlay = isWeapon ? PARRY_WEAPON_READY_SOUND : PARRY_FIST_READY_SOUND;
 
-						player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
+						player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 0.25f, randomPitch);
 					}
 				}
 			});
