@@ -6,9 +6,6 @@ import dev.emi.trinkets.api.client.TrinketRendererRegistry;
 import dev.emi.trinkets.api.TrinketsApi;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration;
-import dev.kosmx.playerAnim.api.layered.modifier.AbstractModifier;
-import dev.kosmx.playerAnim.core.util.Vec3f;
-import dev.kosmx.playerAnim.api.TransformType;
 import dev.kosmx.playerAnim.api.layered.IAnimation;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
 import me.fzzyhmstrs.fzzy_config.api.RegisterType;
@@ -25,6 +22,8 @@ import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.sound.PositionedSoundInstance;
@@ -35,6 +34,8 @@ import net.minecraft.item.MiningToolItem;
 import net.minecraft.item.TridentItem;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourceType;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -47,6 +48,7 @@ import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationFactory;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 
+import java.io.InputStream;
 import java.util.Random;
 
 public class RiposteClient implements ClientModInitializer {
@@ -65,8 +67,10 @@ public class RiposteClient implements ClientModInitializer {
 
 	public static long lastLethalParryTimestamp = 0L;
 	public static boolean shaderActive = false;
-
 	public static boolean renderLeftArm = false;
+
+	private static int renderTopPadding = 0;
+	private static int renderBottomPadding = 0;
 
 	@Override
 	public void onInitializeClient() {
@@ -98,6 +102,60 @@ public class RiposteClient implements ClientModInitializer {
 		TrinketRendererRegistry.registerRenderer(Riposte.HONORABLE_CAPE, emptyRenderer);
 		TrinketRendererRegistry.registerRenderer(Riposte.NEURAL_LINK, emptyRenderer);
 		TrinketRendererRegistry.registerRenderer(Riposte.SHULKER_HEAD_PLATE, emptyRenderer);
+
+		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
+			@Override
+			public Identifier getFabricId() {
+				return new Identifier(Riposte.MOD_ID, "icon_padding_calculator");
+			}
+
+			@Override
+			public void reload(ResourceManager manager) {
+				try {
+					var resource = manager.getResource(PARRY_ICON_FULL);
+					if (resource.isPresent()) {
+						try (InputStream stream = resource.get().getInputStream();
+						     net.minecraft.client.texture.NativeImage image = net.minecraft.client.texture.NativeImage.read(stream)) {
+
+							int width = image.getWidth();
+							int height = image.getHeight();
+
+							int top = height;
+							int bottom = 0;
+
+							for (int y = 0; y < height; y++) {
+								boolean hasPixel = false;
+								for (int x = 0; x < width; x++) {
+									int color = image.getColor(x, y);
+									int alpha = (color >>> 24) & 0xFF;
+									if (alpha > 5) {
+										hasPixel = true;
+										break;
+									}
+								}
+								if (hasPixel) {
+									if (top == height) top = y;
+									bottom = y;
+								}
+							}
+
+							if (top != height) {
+								float scaleY = 16.0f / height;
+								renderTopPadding = Math.round(top * scaleY);
+								renderBottomPadding = Math.round((height - 1 - bottom) * scaleY);
+							} else {
+								renderTopPadding = 0;
+								renderBottomPadding = 0;
+							}
+						}
+					}
+				} catch (Exception e) {
+					Riposte.LOGGER.error("Failed to dynamically scan parry icon!", e);
+					renderTopPadding = 0;
+					renderBottomPadding = 0;
+				}
+			}
+		});
 
 		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_VFX_PACKET, (client, handler, buf, responseSender) -> {
 			double px = buf.readDouble();
@@ -173,7 +231,11 @@ public class RiposteClient implements ClientModInitializer {
 					ParryData data = (ParryData) client.player;
 					data.setSuccessfulComboTimestamp(System.currentTimeMillis());
 
-					playFirstPersonAnimation((AbstractClientPlayerEntity) client.player, "kick_hit");
+					ItemStack stack = client.player.getMainHandStack();
+					boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
+
+					String animName = isWeapon ? "weapon_kick_hit" : "kick_hit";
+					playFirstPersonAnimation((AbstractClientPlayerEntity) client.player, animName);
 				}
 			});
 		});
@@ -258,7 +320,8 @@ public class RiposteClient implements ClientModInitializer {
 			drawContext.getMatrices().scale(CLIENT_CONFIG.iconScale, CLIENT_CONFIG.iconScale, 1.0f);
 
 			float progress = Math.min(1.0f, (float) timeSinceParry / currentCooldown);
-			int fillHeight = (int) (16 * progress);
+			int visibleHeight = Math.max(1, 16 - renderTopPadding - renderBottomPadding);
+			int fillHeight = renderBottomPadding + Math.round(visibleHeight * progress);
 
 			if (progress >= 1.0f) {
 				RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -321,59 +384,19 @@ public class RiposteClient implements ClientModInitializer {
 			var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
 
 			if (animationContainer != null) {
-
 				animationContainer.setAnimation(null);
 
 				var keyframePlayer = new KeyframeAnimationPlayer(animation);
-
 				keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
 
-				boolean isKick = animName.equals("kick_hit");
+				boolean isKick = animName.contains("kick_hit");
 				boolean isWeaponAnim = animName.contains("weapon");
-
 				boolean showLeft = isKick || isWeaponAnim;
 				renderLeftArm = showLeft;
 
 				keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, showLeft, true, showLeft));
 
-				ModifierLayer<IAnimation> offsetLayer = new ModifierLayer<>();
-				offsetLayer.setAnimation(keyframePlayer);
-
-				offsetLayer.addModifierLast(new AbstractModifier() {
-					@Override
-					public Vec3f get3DTransform(String modelName, TransformType type, float tickDelta, Vec3f value0) {
-						Vec3f base = super.get3DTransform(modelName, type, tickDelta, value0);
-
-						// Only apply the pushback if we are in First Person view
-						if (type == TransformType.POSITION && MinecraftClient.getInstance().options.getPerspective().isFirstPerson()) {
-
-							if (modelName.equals("rightArm") || modelName.equals("right_arm")) {
-								float maxTick = 14.16f;
-								float currentTick = keyframePlayer.getTick();
-								float animProgress = Math.min(1.0f, Math.max(0.0f, currentTick / maxTick));
-								float easeFactor = (float) Math.sin(animProgress * Math.PI);
-
-								return new Vec3f(base.getX(), base.getY(), base.getZ() - (6.0f * easeFactor));
-							}
-
-							if (modelName.equals("leftArm") || modelName.equals("left_arm")) {
-								float maxTick = 14.16f;
-								float currentTick = keyframePlayer.getTick();
-								float animProgress = Math.min(1.0f, Math.max(0.0f, currentTick / maxTick));
-								float easeFactor = (float) Math.sin(animProgress * Math.PI);
-
-								if (isKick) {
-									return new Vec3f(base.getX() + 6.0f, base.getY() + 2.0f, base.getZ() - (6.0f * easeFactor));
-								} else {
-									return new Vec3f(base.getX(), base.getY(), base.getZ() - (6.0f * easeFactor));
-								}
-							}
-						}
-						return base;
-					}
-				});
-
-				animationContainer.setAnimation(offsetLayer);
+				animationContainer.setAnimation(keyframePlayer);
 			}
 		}
 	}

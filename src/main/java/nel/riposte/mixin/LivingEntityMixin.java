@@ -15,6 +15,8 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.ElderGuardianEntity;
 import net.minecraft.entity.mob.WardenEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.effect.StatusEffectCategory;
+import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.MiningToolItem;
@@ -89,6 +91,21 @@ public abstract class LivingEntityMixin implements HitstopData {
         return modifiedAmount;
     }
 
+    // BLOCK POTION/WEAPON EFFECTS WHILE PARRYING
+    @Inject(method = "addStatusEffect(Lnet/minecraft/entity/effect/StatusEffectInstance;Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true)
+    private void riposte$blockDebuffsDuringParry(StatusEffectInstance effect, Entity source, CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this instanceof PlayerEntity player) {
+            ParryData parryData = (ParryData) player;
+            int currentWindow = parryData.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
+
+            if (effect != null && effect.getEffectType().getCategory() == StatusEffectCategory.HARMFUL) {
+                if (parryData.isParryActive(currentWindow)) {
+                    cir.setReturnValue(false);
+                }
+            }
+        }
+    }
+
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
     private void riposte$onDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof PlayerEntity player) {
@@ -104,12 +121,20 @@ public abstract class LivingEntityMixin implements HitstopData {
                     return;
                 }
 
+                // Cance the raw damage
                 cir.setReturnValue(false);
+
+                // Instantly kill any fire that was applied right before this damage ticked!
+                player.extinguish();
 
                 int iFrames = 10;
                 var component = TrinketsApi.getTrinketComponent(player).orElse(null);
-                if (component != null && (component.isEquipped(Riposte.COPPER_GUARD) || component.isEquipped(Riposte.VOID_GUARD))) {
-                    iFrames = 20; // 0.5 seconds added over base
+                if (component != null) {
+                    if (component.isEquipped(Riposte.COPPER_GUARD)) {
+                        iFrames = 30;
+                    } else if (component.isEquipped(Riposte.VOID_GUARD)) {
+                        iFrames = 20;
+                    }
                 }
                 player.timeUntilRegen = iFrames;
 

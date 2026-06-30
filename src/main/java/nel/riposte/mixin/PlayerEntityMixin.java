@@ -86,6 +86,18 @@ public class PlayerEntityMixin implements ParryData {
         this.lastParriedEntityId = id;
     }
 
+    // BLOCK FIRE FROM MODS OR ENCHANTMENTS WHILE PARRYING
+    @Inject(method = "setFireTicks", at = @At("HEAD"), cancellable = true)
+    private void riposte$blockFireDuringParry(int ticks, CallbackInfo ci) {
+        PlayerEntity player = (PlayerEntity) (Object) this;
+        int currentWindow = this.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
+
+        // If the game is trying to ADD fire to the player while they are actively parrying
+        if (ticks > player.getFireTicks() && this.isParryActive(currentWindow)) {
+            ci.cancel();
+        }
+    }
+
     @Inject(method = "tick", at = @At("HEAD"))
     private void riposte$airParryProjectiles(CallbackInfo ci) {
         if (!Riposte.CONFIG.deflectProjectiles) return;
