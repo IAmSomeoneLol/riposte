@@ -43,11 +43,11 @@ public interface ParryData {
 
         double rate = 1.0;
 
-        if (component.isEquipped(Riposte.IRON_PLATE)) rate += 3.0;
-        if (component.isEquipped(Riposte.CREST_OF_THE_VOID)) rate += 3.0;
-        if (component.isEquipped(Riposte.COBALT_PLATE)) rate += 5.0;
+        if (component.isEquipped(Riposte.IRON_GUARD)) rate += 3.0;
+        if (component.isEquipped(Riposte.VOID_GUARD)) rate += 5.0;
+        if (component.isEquipped(Riposte.COPPER_GUARD)) rate += 5.0;
 
-        if (component.isEquipped(Riposte.BRAIN_CHIP)) rate *= 2.0;
+        if (component.isEquipped(Riposte.NEURAL_LINK)) rate *= 2.0;
 
         return (int) (baseCooldownMs / rate);
     }
@@ -57,7 +57,7 @@ public interface ParryData {
         var component = TrinketsApi.getTrinketComponent(player).orElse(null);
         if (component == null) return baseWindowMs;
 
-        if (component.isEquipped(Riposte.EVERLASTING_BLOODRING)) {
+        if (component.isEquipped(Riposte.BLOODLUSTFUL_RING)) {
             return baseWindowMs * 2;
         }
         return baseWindowMs;
@@ -68,11 +68,13 @@ public interface ParryData {
         var component = TrinketsApi.getTrinketComponent(player).orElse(null);
         if (component == null) return false;
 
-        if (component.isEquipped(Riposte.CREST_OF_THE_VOID)) return true;
+        // Void Guard allows ALL parries
+        if (component.isEquipped(Riposte.VOID_GUARD)) return true;
 
-        if (source.isOf(DamageTypes.FALL) && component.isEquipped(Riposte.LEATHER_SOCK)) return true;
+        // Copper Guard and Leather Sock allow fall damage parries
+        if (source.isOf(DamageTypes.FALL) && (component.isEquipped(Riposte.LEATHER_SOCK) || component.isEquipped(Riposte.COPPER_GUARD))) return true;
 
-        boolean hasPlate = component.isEquipped(Riposte.IRON_PLATE) || component.isEquipped(Riposte.COBALT_PLATE);
+        boolean hasPlate = component.isEquipped(Riposte.IRON_GUARD) || component.isEquipped(Riposte.COPPER_GUARD);
         if (source.isIn(DamageTypeTags.IS_PROJECTILE) && hasPlate) return true;
 
         return source.getAttacker() instanceof LivingEntity && !source.isIn(DamageTypeTags.IS_PROJECTILE) && !source.isIndirect();
@@ -83,8 +85,8 @@ public interface ParryData {
         var component = TrinketsApi.getTrinketComponent(player).orElse(null);
         if (component == null) return false;
 
-        if (component.isEquipped(Riposte.CREST_OF_THE_VOID)) return true;
-        return component.isEquipped(Riposte.IRON_PLATE) || component.isEquipped(Riposte.COBALT_PLATE);
+        if (component.isEquipped(Riposte.VOID_GUARD)) return true;
+        return component.isEquipped(Riposte.IRON_GUARD) || component.isEquipped(Riposte.COPPER_GUARD);
     }
 
     default void refundParryCooldown(float percentage) {

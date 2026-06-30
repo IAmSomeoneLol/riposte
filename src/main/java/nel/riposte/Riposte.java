@@ -55,28 +55,28 @@ public class Riposte implements ModInitializer {
 	public static final Identifier PARRY_WEAPON_READY_ID = new Identifier(MOD_ID, "parry_weapon_ready");
 	public static final SoundEvent PARRY_WEAPON_READY_SOUND = SoundEvent.of(PARRY_WEAPON_READY_ID);
 
-	public static final Item IRON_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
-			"tooltip.riposte.passive", "tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3");
+	public static final Item IRON_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
+			"tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3");
 
 	public static final Item LEATHER_SOCK = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
-			"tooltip.riposte.passive", "tooltip.riposte.passive.fall");
+			"tooltip.riposte.passive.fall");
 
-	public static final Item CREST_OF_THE_VOID = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
-			"tooltip.riposte.passive", "tooltip.riposte.passive.all", "tooltip.riposte.modifier.recharge_rate_3");
+	public static final Item VOID_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
+			"tooltip.riposte.passive.all", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time_0_5");
 
-	public static final Item COBALT_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
-			"tooltip.riposte.passive", "tooltip.riposte.passive.projectile", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time");
+	public static final Item COPPER_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
+			"tooltip.riposte.passive.projectile", "tooltip.riposte.passive.fall", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time_1");
 
-	public static final Item EVERLASTING_BLOODRING = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "ring", null,
-			"tooltip.riposte.passive.bloodring_1", "tooltip.riposte.passive.bloodring_2", "tooltip.riposte.warning.no_stack");
+	public static final Item BLOODLUSTFUL_RING = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "ring", null,
+			"tooltip.riposte.passive.bloodring_1", "tooltip.riposte.debuff.damage_taken", "tooltip.riposte.warning.no_stack");
 
-	public static final Item WANDERERS_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "cape", null,
+	public static final Item HONORABLE_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "cape", null,
 			"tooltip.riposte.passive.charge_meter", "tooltip.riposte.passive.damage_dealt");
 
-	public static final Item BRAIN_CHIP = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "hat", null,
+	public static final Item NEURAL_LINK = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "hat", null,
 			"tooltip.riposte.modifier.recharge_rate_100");
 
-	public static final Item ENDER_DRAGON_SCALE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "charm", "head/hat",
+	public static final Item SHULKER_HEAD_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "charm", "head/hat",
 			"tooltip.riposte.passive.head_slot", "tooltip.riposte.warning.no_stack");
 
 	public static final Identifier PARRY_SYNC_PACKET = new Identifier(MOD_ID, "parry_sync");
@@ -99,24 +99,24 @@ public class Riposte implements ModInitializer {
 		Registry.register(Registries.SOUND_EVENT, PARRY_FIST_READY_ID, PARRY_FIST_READY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, PARRY_WEAPON_READY_ID, PARRY_WEAPON_READY_SOUND);
 
-		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "iron_plate"), IRON_PLATE);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "iron_guard"), IRON_GUARD);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "leather_sock"), LEATHER_SOCK);
-		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "crest_of_the_void"), CREST_OF_THE_VOID);
-		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "cobalt_plate"), COBALT_PLATE);
-		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "everlasting_bloodring"), EVERLASTING_BLOODRING);
-		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "wanderers_cape"), WANDERERS_CAPE);
-		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "brain_chip"), BRAIN_CHIP);
-		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "ender_dragon_scale"), ENDER_DRAGON_SCALE);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "void_guard"), VOID_GUARD);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "copper_guard"), COPPER_GUARD);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "bloodlustful_ring"), BLOODLUSTFUL_RING);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "honorable_cape"), HONORABLE_CAPE);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "neural_link"), NEURAL_LINK);
+		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "shulker_head_plate"), SHULKER_HEAD_PLATE);
 
 		ItemGroupEvents.modifyEntriesEvent(ItemGroups.COMBAT).register(entries -> {
-			entries.add(IRON_PLATE);
+			entries.add(IRON_GUARD);
 			entries.add(LEATHER_SOCK);
-			entries.add(CREST_OF_THE_VOID);
-			entries.add(COBALT_PLATE);
-			entries.add(EVERLASTING_BLOODRING);
-			entries.add(WANDERERS_CAPE);
-			entries.add(BRAIN_CHIP);
-			entries.add(ENDER_DRAGON_SCALE);
+			entries.add(VOID_GUARD);
+			entries.add(COPPER_GUARD);
+			entries.add(BLOODLUSTFUL_RING);
+			entries.add(HONORABLE_CAPE);
+			entries.add(NEURAL_LINK);
+			entries.add(SHULKER_HEAD_PLATE);
 		});
 
 		ServerPlayNetworking.registerGlobalReceiver(PARRY_SYNC_PACKET, (server, player, handler, buf, responseSender) -> {
@@ -145,32 +145,33 @@ public class Riposte implements ModInitializer {
 					id.equals(LootTables.RUINED_PORTAL_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 						.conditionally(RandomChanceLootCondition.builder(0.15f))
-						.with(ItemEntry.builder(IRON_PLATE)).build());
+						.with(ItemEntry.builder(IRON_GUARD)).build());
 			}
 
+			// Stupidy Rare: 0.5% Drop Rate
 			if (id.equals(LootTables.END_CITY_TREASURE_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
-						.conditionally(RandomChanceLootCondition.builder(0.05f))
-						.with(ItemEntry.builder(CREST_OF_THE_VOID)).build());
+						.conditionally(RandomChanceLootCondition.builder(0.005f))
+						.with(ItemEntry.builder(VOID_GUARD)).build());
 			}
 
 			if (id.equals(LootTables.STRONGHOLD_CORRIDOR_CHEST) || id.equals(LootTables.STRONGHOLD_CROSSING_CHEST) ||
 					id.equals(LootTables.END_CITY_TREASURE_CHEST) || id.equals(LootTables.ANCIENT_CITY_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 						.conditionally(RandomChanceLootCondition.builder(0.05f))
-						.with(ItemEntry.builder(COBALT_PLATE)).build());
+						.with(ItemEntry.builder(COPPER_GUARD)).build());
 			}
 
 			if (id.equals(LootTables.ANCIENT_CITY_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 						.conditionally(RandomChanceLootCondition.builder(0.08f))
-						.with(ItemEntry.builder(BRAIN_CHIP)).build());
+						.with(ItemEntry.builder(NEURAL_LINK)).build());
 			}
 
 			if (id.equals(LootTables.END_CITY_TREASURE_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 						.conditionally(RandomChanceLootCondition.builder(0.05f))
-						.with(ItemEntry.builder(ENDER_DRAGON_SCALE)).build());
+						.with(ItemEntry.builder(SHULKER_HEAD_PLATE)).build());
 			}
 
 			Identifier[] genericTreasureChests = new Identifier[]{
@@ -185,11 +186,11 @@ public class Riposte implements ModInitializer {
 				if (id.equals(tableId)) {
 					tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 							.conditionally(RandomChanceLootCondition.builder(0.03f))
-							.with(ItemEntry.builder(EVERLASTING_BLOODRING)).build());
+							.with(ItemEntry.builder(BLOODLUSTFUL_RING)).build());
 
 					tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 							.conditionally(RandomChanceLootCondition.builder(0.03f))
-							.with(ItemEntry.builder(WANDERERS_CAPE)).build());
+							.with(ItemEntry.builder(HONORABLE_CAPE)).build());
 				}
 			}
 		});

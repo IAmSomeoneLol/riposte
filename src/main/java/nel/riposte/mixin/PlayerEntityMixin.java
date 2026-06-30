@@ -178,7 +178,7 @@ public class PlayerEntityMixin implements ParryData {
                 this.setLastParriedEntityId(projectile.getId());
 
                 var component = TrinketsApi.getTrinketComponent(player).orElse(null);
-                if (component != null && component.isEquipped(Riposte.WANDERERS_CAPE)) {
+                if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
                     this.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
                 }
 

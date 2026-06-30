@@ -1,25 +1,27 @@
 {
-  "item.riposte.iron_plate": "Iron Plate",
+  "item.riposte.iron_guard": "Iron Guard",
   "item.riposte.leather_sock": "Leather Socks",
-  "item.riposte.crest_of_the_void": "Crest of the Void",
-  "item.riposte.cobalt_plate": "Cobalt Plate",
-  "item.riposte.everlasting_bloodring": "Everlasting Bloodring",
-  "item.riposte.wanderers_cape": "Wanderer's Cape",
-  "item.riposte.brain_chip": "Brain Chip",
-  "item.riposte.ender_dragon_scale": "Ender Dragon Scale",
+  "item.riposte.void_guard": "Void Guard",
+  "item.riposte.copper_guard": "Copper Guard",
+  "item.riposte.bloodlustful_ring": "Bloodlustful Ring",
+  "item.riposte.honorable_cape": "Honorable Cape",
+  "item.riposte.neural_link": "Neural Link",
+  "item.riposte.shulker_head_plate": "Shulker Head Plate",
 
   "tooltip.riposte.slot.parry": "When in Parry Slot:",
   "tooltip.riposte.slot.ring": "When in Ring Slot:",
   "tooltip.riposte.slot.necklace": "When in Necklace Slot:",
   "tooltip.riposte.slot.head": "When in Head Slot:",
   "tooltip.riposte.slot.charm": "When in Charm Slot:",
-  "tooltip.riposte.passive": "Passive Effect:",
+  "tooltip.riposte.slot.hat": "When in Hat Slot:",
+  "tooltip.riposte.slot.cape": "When in Cape Slot:",
+
   "tooltip.riposte.passive.projectile": " Allows you to parry projectile damage",
   "tooltip.riposte.passive.fall": " Allows you to parry fall damage",
   "tooltip.riposte.passive.all": " Allows you to parry any form of damage",
   "tooltip.riposte.passive.infinite_kb": " Infinite knockback resistance",
   "tooltip.riposte.passive.bloodring_1": " +2x Parry Window Length",
-  "tooltip.riposte.passive.bloodring_2": " +1.5x Damage Taken",
+  "tooltip.riposte.debuff.damage_taken": " +1.5x Damage Taken",
   "tooltip.riposte.passive.charge_meter": " Successfully parrying charges parry meter",
   "tooltip.riposte.passive.damage_dealt": " +1.1x Damage Dealt",
   "tooltip.riposte.passive.head_slot": " +1 Head Slot",
@@ -27,12 +29,21 @@
   "tooltip.riposte.modifier.recharge_rate_3": " +3 Parry Recharge Rate",
   "tooltip.riposte.modifier.recharge_rate_5": " +5 Parry Recharge Rate",
   "tooltip.riposte.modifier.recharge_rate_100": " +100% Parry Recharge Rate",
-  "tooltip.riposte.modifier.invuln_time": " +1 Invulnerability Time",
+  "tooltip.riposte.modifier.invuln_time_1": " +1s Invulnerability Time",
+  "tooltip.riposte.modifier.invuln_time_0_5": " +0.5s Invulnerability Time",
 
   "tooltip.riposte.warning.no_stack": " Does not stack with itself",
 
   "accessories.slot.riposte.parry": "Parry",
   "accessories.slot_group.riposte.parry": "Riposte Stats",
+  "accessories.slot.riposte.head": "Head",
+
+  "trinkets.slot.riposte.parry": "Parry",
+  "trinkets.slot.group.riposte": "Riposte Stats",
+  "trinkets.slot.chest.charm": "Charm",
+  "trinkets.slot.chest.necklace": "Necklace",
+  "trinkets.slot.hand.ring": "Ring",
+  "trinkets.slot.head.hat": "Hat",
 
   "category.riposte.keys": "Riposte Mechanics",
   "key.riposte.parry": "Parry",
@@ -55,11 +66,10 @@
   "riposte.main.kickComboWindowMs": "Kick Combo Window Ms",
 
   "riposte.main.accessoriesConfig": "Accessories Configurations",
-  "riposte.main.ironPlateWindowBonusMs": "Iron Plate Window Bonus Ms",
-  "riposte.main.wanderersCapeCooldownCharge": "Wanderer's Cape Cooldown Charge",
+  "riposte.main.ironPlateWindowBonusMs": "Iron Guard Window Bonus Ms",
+  "riposte.main.wanderersCapeCooldownCharge": "Honorable Cape Cooldown Charge",
 
   "riposte.client.parryActivation": "Parry Activation",
-
   "riposte.client.iconCooldown": "Icon Cooldown",
   "riposte.client.iconAnchor": "Icon Anchor Point",
   "riposte.client.iconMode": "Icon Mode",
@@ -67,41 +77,23 @@
   "riposte.client.yOffset": "Y Offset",
   "riposte.client.iconScale": "Icon Scale",
   "riposte.client.playCooldownSound": "Play Cooldown Sound",
-
   "riposte.client.cameraControl": "Camera Control",
   "riposte.client.cameraShake": "Camera Shake",
   "riposte.client.shakeIntensity": "Shake Intensity",
   "riposte.client.cameraWalkAmplitude": "Camera Walk Amplitude",
   "riposte.client.cameraPushback": "Camera Pushback",
-
   "riposte.client.particleConfig": "Particle Configuration",
   "riposte.client.particleNormal": "Particle Normal",
   "riposte.client.particleHeavy": "Particle Heavy",
-
   "riposte.client.cameraRecoil": "Camera Recoil",
   "riposte.client.recoilIntensity": "Recoil Intensity",
   "riposte.client.recoilDurationMs": "Recoil Duration (ms)",
-
   "riposte.client.fovSettings": "FOV Settings",
   "riposte.client.fovChange": "FOV Change",
   "riposte.client.fovZoom": "FOV Zoom Out",
   "riposte.client.fovDurationMs": "FOV Duration (ms)",
-
-  "riposte.client.lethalShaderDurationMs": "Lethal Shader Duration (ms)",
-
-  "accessories.slot.riposte.head": "Head",
   "riposte.client.lethalParryShader": "Lethal Parry Shader",
-
-  "tooltip.riposte.slot.hat": "When in Hat Slot:",
-
-  "trinkets.slot.riposte.parry": "Parry",
-  "trinkets.slot.group.riposte": "Riposte Stats",
-  "trinkets.slot.chest.charm": "Charm",
-  "trinkets.slot.chest.necklace": "Necklace",
-  "trinkets.slot.hand.ring": "Ring",
-  "trinkets.slot.head.hat": "Hat",
-  "tooltip.riposte.slot.cape": "When in Cape Slot:",
-
+  "riposte.client.lethalShaderDurationMs": "Lethal Shader Duration (ms)",
   "riposte.client.flashScreen": "Flash Screen",
   "riposte.client.screenFlash": "Screen Flash",
   "riposte.client.screenFlashType": "Screen Flash Type",

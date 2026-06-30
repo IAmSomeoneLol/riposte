@@ -8,7 +8,8 @@
 		"GameRendererInvoker",
 		"FovMixin",
 		"PlayerEntityModelMixin",
-		"HeldItemRendererMixin"
+		"HeldItemRendererMixin",
+		"AbstractClientPlayerEntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

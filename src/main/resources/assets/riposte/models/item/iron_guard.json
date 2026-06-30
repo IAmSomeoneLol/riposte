@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "riposte:item/crest_of_the_void"
+    "layer0": "riposte:item/iron_guard"
   }
 }

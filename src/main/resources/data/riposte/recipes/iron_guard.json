@@ -11,7 +11,7 @@
     "S": { "item": "minecraft:shield" }
   },
   "result": {
-    "item": "riposte:iron_plate",
+    "item": "riposte:iron_guard",
     "count": 1
   }
 }

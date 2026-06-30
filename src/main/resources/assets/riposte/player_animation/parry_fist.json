@@ -2,7 +2,7 @@
 	"format_version": "1.8.0",
 	"animations": {
 		"parry_fist": {
-			"animation_length": 0.75,
+			"animation_length": 1.2333,
 			"override_previous_animation": true,
 			"bones": {
 				"right_arm": {

@@ -59,10 +59,10 @@ public abstract class LivingEntityMixin implements HitstopData {
     }
 
     @Inject(method = "takeKnockback", at = @At("HEAD"), cancellable = true)
-    private void riposte$cobaltPlateKnockback(double strength, double x, double z, CallbackInfo ci) {
+    private void riposte$copperGuardKnockback(double strength, double x, double z, CallbackInfo ci) {
         if ((Object) this instanceof PlayerEntity player) {
             var component = TrinketsApi.getTrinketComponent(player).orElse(null);
-            if (component != null && component.isEquipped(Riposte.COBALT_PLATE)) {
+            if (component != null && (component.isEquipped(Riposte.COPPER_GUARD) || component.isEquipped(Riposte.VOID_GUARD))) {
                 ci.cancel();
             }
         }
@@ -74,14 +74,14 @@ public abstract class LivingEntityMixin implements HitstopData {
 
         if (source.getAttacker() instanceof PlayerEntity attacker) {
             var component = TrinketsApi.getTrinketComponent(attacker).orElse(null);
-            if (component != null && component.isEquipped(Riposte.WANDERERS_CAPE)) {
+            if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
                 modifiedAmount *= 1.1f;
             }
         }
 
         if ((Object) this instanceof PlayerEntity victim) {
             var component = TrinketsApi.getTrinketComponent(victim).orElse(null);
-            if (component != null && component.isEquipped(Riposte.EVERLASTING_BLOODRING)) {
+            if (component != null && component.isEquipped(Riposte.BLOODLUSTFUL_RING)) {
                 modifiedAmount *= 1.5f;
             }
         }
@@ -108,8 +108,8 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                 int iFrames = 10;
                 var component = TrinketsApi.getTrinketComponent(player).orElse(null);
-                if (component != null && component.isEquipped(Riposte.COBALT_PLATE)) {
-                    iFrames = 20;
+                if (component != null && (component.isEquipped(Riposte.COPPER_GUARD) || component.isEquipped(Riposte.VOID_GUARD))) {
+                    iFrames = 20; // 0.5 seconds added over base
                 }
                 player.timeUntilRegen = iFrames;
 
@@ -177,7 +177,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                     ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, PacketByteBufs.create());
                 }
 
-                if (component != null && component.isEquipped(Riposte.WANDERERS_CAPE)) {
+                if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
                     parryData.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
                 }
 

@@ -46,10 +46,16 @@ public class RiposteAccessoryItem extends TrinketItem {
         if (this.tooltipKeys.length > 0) {
             tooltip.add(Text.empty());
 
-            tooltip.add(Text.translatable("tooltip.riposte.slot." + this.targetSlot).formatted(Formatting.GRAY));
+            tooltip.add(Text.translatable("tooltip.riposte.slot." + this.targetSlot).formatted(Formatting.GOLD));
 
             for (String key : tooltipKeys) {
-                tooltip.add(Text.translatable(key).formatted(Formatting.BLUE));
+                Formatting color = Formatting.BLUE;
+
+                if (key.contains("debuff")) {
+                    color = Formatting.DARK_RED;
+                }
+
+                tooltip.add(Text.translatable(key).formatted(color));
             }
         }
         super.appendTooltip(stack, world, tooltip, context);

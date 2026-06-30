@@ -17,27 +17,44 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class PlayerEntityModelMixin {
 
     @Inject(method = "setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V", at = @At("RETURN"))
-    private void riposte$hideBodyInFirstPerson(LivingEntity entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch, CallbackInfo ci) {
+    private void riposte$handleParryAnimations(LivingEntity entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch, CallbackInfo ci) {
 
-        if (entity == MinecraftClient.getInstance().player && MinecraftClient.getInstance().options.getPerspective().isFirstPerson()) {
-
-            var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData((AbstractClientPlayerEntity) entity).get(new Identifier(Riposte.MOD_ID, "animation"));
+        if (entity instanceof AbstractClientPlayerEntity player) {
+            var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
 
             if (animationContainer != null && animationContainer.isActive()) {
                 PlayerEntityModel<?> model = (PlayerEntityModel<?>) (Object) this;
+                boolean isFirstPerson = player == MinecraftClient.getInstance().player && MinecraftClient.getInstance().options.getPerspective().isFirstPerson();
 
-                model.head.visible = false;
-                model.hat.visible = false;
-                model.body.visible = false;
-                model.jacket.visible = false;
+                float pitchRad = headPitch * ((float)Math.PI / 180F);
 
-                model.leftArm.visible = RiposteClient.renderLeftArm;
-                model.leftSleeve.visible = RiposteClient.renderLeftArm;
+                model.rightArm.pitch += pitchRad;
+                model.rightSleeve.pitch += pitchRad;
 
-                model.leftLeg.visible = false;
-                model.leftPants.visible = false;
-                model.rightLeg.visible = false;
-                model.rightPants.visible = false;
+                if (RiposteClient.renderLeftArm) {
+                    model.leftArm.pitch += pitchRad;
+                    model.leftSleeve.pitch += pitchRad;
+                }
+
+                if (isFirstPerson) {
+
+                    model.head.visible = false;
+                    model.hat.visible = false;
+                    model.body.visible = false;
+                    model.jacket.visible = false;
+
+                    model.leftArm.visible = RiposteClient.renderLeftArm;
+                    model.leftSleeve.visible = RiposteClient.renderLeftArm;
+
+                    model.leftLeg.visible = false;
+                    model.leftPants.visible = false;
+                    model.rightLeg.visible = false;
+                    model.rightPants.visible = false;
+                } else {
+                    // Bend the spine slightly (50%) ONLY in Third-Person for a natural looking posture
+                    model.body.pitch += pitchRad * 0.5f;
+                    model.jacket.pitch += pitchRad * 0.5f;
+                }
             }
         }
     }

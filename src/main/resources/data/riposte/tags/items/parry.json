@@ -1,9 +1,9 @@
 {
   "replace": false,
   "values": [
-    "riposte:iron_plate",
+    "riposte:iron_guard",
     "riposte:leather_sock",
-    "riposte:crest_of_the_void",
-    "riposte:cobalt_plate"
+    "riposte:void_guard",
+    "riposte:copper_guard"
   ]
 }

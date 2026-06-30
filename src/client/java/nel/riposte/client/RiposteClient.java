@@ -90,14 +90,14 @@ public class RiposteClient implements ClientModInitializer {
 
 		TrinketRenderer emptyRenderer = (stack, slotReference, contextModel, matrices, vertexConsumers, light, entity, limbAngle, limbDistance, tickDelta, animationProgress, headYaw, headPitch) -> {};
 
-		TrinketRendererRegistry.registerRenderer(Riposte.IRON_PLATE, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.IRON_GUARD, emptyRenderer);
 		TrinketRendererRegistry.registerRenderer(Riposte.LEATHER_SOCK, emptyRenderer);
-		TrinketRendererRegistry.registerRenderer(Riposte.CREST_OF_THE_VOID, emptyRenderer);
-		TrinketRendererRegistry.registerRenderer(Riposte.COBALT_PLATE, emptyRenderer);
-		TrinketRendererRegistry.registerRenderer(Riposte.EVERLASTING_BLOODRING, emptyRenderer);
-		TrinketRendererRegistry.registerRenderer(Riposte.WANDERERS_CAPE, emptyRenderer);
-		TrinketRendererRegistry.registerRenderer(Riposte.BRAIN_CHIP, emptyRenderer);
-		TrinketRendererRegistry.registerRenderer(Riposte.ENDER_DRAGON_SCALE, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.VOID_GUARD, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.COPPER_GUARD, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.BLOODLUSTFUL_RING, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.HONORABLE_CAPE, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.NEURAL_LINK, emptyRenderer);
+		TrinketRendererRegistry.registerRenderer(Riposte.SHULKER_HEAD_PLATE, emptyRenderer);
 
 		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_VFX_PACKET, (client, handler, buf, responseSender) -> {
 			double px = buf.readDouble();
@@ -151,7 +151,7 @@ public class RiposteClient implements ClientModInitializer {
 					data.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
 					var component = TrinketsApi.getTrinketComponent(client.player).orElse(null);
-					if (component != null && component.isEquipped(Riposte.WANDERERS_CAPE)) {
+					if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
 						data.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
 					}
 
@@ -344,6 +344,7 @@ public class RiposteClient implements ClientModInitializer {
 					public Vec3f get3DTransform(String modelName, TransformType type, float tickDelta, Vec3f value0) {
 						Vec3f base = super.get3DTransform(modelName, type, tickDelta, value0);
 
+						// Only apply the pushback if we are in First Person view
 						if (type == TransformType.POSITION && MinecraftClient.getInstance().options.getPerspective().isFirstPerson()) {
 
 							if (modelName.equals("rightArm") || modelName.equals("right_arm")) {
