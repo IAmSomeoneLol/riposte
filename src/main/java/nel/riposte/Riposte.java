@@ -78,7 +78,7 @@ public class Riposte implements ModInitializer {
 			"tooltip.riposte.passive.charge_meter", "tooltip.riposte.passive.damage_dealt");
 
 	public static final Item NEURAL_LINK = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "hat", null,
-			"tooltip.riposte.modifier.recharge_rate_100", "tooltip.riposte.modifier.auto_fall_parry_25");
+			"tooltip.riposte.modifier.recharge_rate_100", "tooltip.riposte.modifier.auto_fall_parry_50");
 
 	public static final Item SHULKER_HEAD_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "charm", "head/hat",
 			"tooltip.riposte.passive.head_slot", "tooltip.riposte.warning.no_stack");

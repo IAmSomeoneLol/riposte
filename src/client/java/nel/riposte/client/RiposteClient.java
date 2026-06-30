@@ -69,6 +69,9 @@ public class RiposteClient implements ClientModInitializer {
 	public static boolean shaderActive = false;
 	public static boolean renderLeftArm = false;
 
+	// TRACKS IF THE PARRY WAS A ROLL SO WE CAN CANCEL THE WHITE FLASH
+	public static boolean lastParryWasFall = false;
+
 	private static int renderTopPadding = 0;
 	private static int renderBottomPadding = 0;
 
@@ -210,7 +213,14 @@ public class RiposteClient implements ClientModInitializer {
 			client.execute(() -> {
 				if (client.player != null) {
 					ParryData data = (ParryData) client.player;
-					data.setSuccessfulParryTimestamp(System.currentTimeMillis());
+					long now = System.currentTimeMillis();
+					data.setSuccessfulParryTimestamp(now);
+
+					lastParryWasFall = isFallParry;
+					if (isFallParry) {
+						// Sync the parry timestamp locally so they cannot double trigger a parry after an auto-parry!
+						data.setParryTimestamp(now);
+					}
 
 					var component = TrinketsApi.getTrinketComponent(client.player).orElse(null);
 					if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
@@ -238,6 +248,9 @@ public class RiposteClient implements ClientModInitializer {
 				if (client.player != null) {
 					ParryData data = (ParryData) client.player;
 					data.setSuccessfulComboTimestamp(System.currentTimeMillis());
+
+					// Clear the fall state so they don't lose flashes permanently
+					lastParryWasFall = false;
 
 					ItemStack stack = client.player.getMainHandStack();
 					boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
@@ -303,7 +316,8 @@ public class RiposteClient implements ClientModInitializer {
 			long timeSinceCombo = System.currentTimeMillis() - data.getSuccessfulComboTimestamp();
 			long timeSinceFlash = Math.min(timeSinceSuccess, timeSinceCombo);
 
-			if (CLIENT_CONFIG.screenFlash && timeSinceFlash < CLIENT_CONFIG.screenFlashDurationMs) {
+			// DO NOT RENDER FLASH IF THE LAST PARRY WAS FALL DAMAGE
+			if (CLIENT_CONFIG.screenFlash && timeSinceFlash < CLIENT_CONFIG.screenFlashDurationMs && !lastParryWasFall) {
 				float alpha = 1.0f - ((float) timeSinceFlash / CLIENT_CONFIG.screenFlashDurationMs);
 				int rgb = CLIENT_CONFIG.screenFlashType == RiposteClientConfig.FlashType.WHITE ? 0xFFFFFF : 0x000000;
 				int color = ((int) (alpha * 100) << 24) | rgb;
@@ -384,6 +398,9 @@ public class RiposteClient implements ClientModInitializer {
 				data.setParryTimestamp(System.currentTimeMillis());
 				ClientPlayNetworking.send(Riposte.PARRY_SYNC_PACKET, PacketByteBufs.create());
 
+				// Reset the fall damage blocker if they start a new manual parry
+				lastParryWasFall = false;
+
 				ItemStack stack = client.player.getMainHandStack();
 				boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
 
@@ -419,8 +436,6 @@ public class RiposteClient implements ClientModInitializer {
 
 				boolean isKick = animName.contains("kick_hit");
 				boolean isWeaponAnim = animName.contains("weapon");
-
-				// Fall damage animation involves bracing both arms!
 				boolean isFall = animName.contains("fall_damage");
 
 				boolean showLeft = isKick || isWeaponAnim || isFall;

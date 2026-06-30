@@ -114,7 +114,6 @@ public class PlayerEntityMixin implements ParryData {
                 if (this.leatherSockTicks > 0) {
                     this.leatherSockTicks--;
                     if (speedAttr.getModifier(LEATHER_SOCK_SPEED_UUID) == null) {
-                        // Adds +10% to their total calculation
                         speedAttr.addTemporaryModifier(new EntityAttributeModifier(LEATHER_SOCK_SPEED_UUID, "Leather Sock Speed", 0.1, EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
                     }
                 } else {

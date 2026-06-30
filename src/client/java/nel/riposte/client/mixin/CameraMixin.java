@@ -37,24 +37,29 @@ public abstract class CameraMixin {
         float upMove = 0f;
         float rightMove = 0f;
 
-
         if (RiposteClient.CLIENT_CONFIG.cameraRecoil && timeSince < RiposteClient.CLIENT_CONFIG.recoilDurationMs) {
             float progress = (float) timeSince / RiposteClient.CLIENT_CONFIG.recoilDurationMs;
             float ease = (float) Math.pow(1.0 - progress, 3);
 
-            // Seed the random with the specific parry timestamp so the direction stays constant for the entire duration of this one bounce
-            Random rand = new Random(data.getSuccessfulParryTimestamp());
-            double angle = rand.nextDouble() * Math.PI * 2.0;
+            if (RiposteClient.lastParryWasFall) {
+                // NEW: If it's a fall parry, apply the recoil directly into the downward Pitch.
+                // In Minecraft, positive pitch makes you look down at the floor!
+                finalPitchOffset += RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
+            } else {
+                // Regular parries still randomize the recoil direction
+                Random rand = new Random(data.getSuccessfulParryTimestamp());
+                double angle = rand.nextDouble() * Math.PI * 2.0;
 
-            float yawDir = (float) Math.cos(angle);
-            float pitchDir = (float) Math.sin(angle);
+                float yawDir = (float) Math.cos(angle);
+                float pitchDir = (float) Math.sin(angle);
 
-            finalYawOffset += yawDir * RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
-            finalPitchOffset += pitchDir * RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
+                finalYawOffset += yawDir * RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
+                finalPitchOffset += pitchDir * RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
+            }
         }
 
-
-        if (RiposteClient.CLIENT_CONFIG.cameraShake && timeSince < 250) {
+        // We completely ignore the micro-screen shake for the fall parry so it's a smooth impact
+        if (RiposteClient.CLIENT_CONFIG.cameraShake && timeSince < 250 && !RiposteClient.lastParryWasFall) {
             float progress = (float) timeSince / 250f;
             float fade = Math.max(0.0f, 1.0f - progress);
 
@@ -64,18 +69,13 @@ public abstract class CameraMixin {
             finalPitchOffset += noiseX * RiposteClient.CLIENT_CONFIG.shakeIntensity * fade * 3.0f;
             finalYawOffset += noiseY * RiposteClient.CLIENT_CONFIG.shakeIntensity * fade * 3.0f;
 
-            // Mapping the variables correctly based on Minecraft's Camera axes
             rightMove = noiseX * RiposteClient.CLIENT_CONFIG.cameraWalkAmplitude * fade;
             upMove = noiseY * RiposteClient.CLIENT_CONFIG.cameraWalkAmplitude * fade;
-
 
             forwardMove = -RiposteClient.CLIENT_CONFIG.cameraPushback * fade;
         }
 
-
         this.moveBy(forwardMove, upMove, rightMove);
-
-
         this.setRotation(this.yaw + finalYawOffset, this.pitch + finalPitchOffset);
     }
 }

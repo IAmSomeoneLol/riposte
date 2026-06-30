@@ -125,11 +125,11 @@ public abstract class LivingEntityMixin implements HitstopData {
 
             int currentWindow = parryData.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
-            // NEURAL LINK: Auto-Parry Fall Damage Logic
             if (source.isOf(DamageTypes.FALL) && !parryData.isParryActive(currentWindow)) {
                 var component = TrinketsApi.getTrinketComponent(player).orElse(null);
                 int neuralCount = component != null ? component.getEquipped(Riposte.NEURAL_LINK).size() : 0;
-                if (neuralCount > 0 && player.getWorld().getRandom().nextFloat() < (0.25f * neuralCount)) {
+
+                if (neuralCount > 0 && player.getWorld().getRandom().nextFloat() < (0.50f * neuralCount)) {
                     int cooldown = parryData.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
                     if (parryData.canParry(cooldown)) {
                         parryData.setParryTimestamp(System.currentTimeMillis());
@@ -152,16 +152,29 @@ public abstract class LivingEntityMixin implements HitstopData {
                 // FALL DAMAGE PARRY EXECUTION
                 if (source.isOf(DamageTypes.FALL)) {
                     if (component != null && component.isEquipped(Riposte.LEATHER_SOCK)) {
-                        parryData.setLeatherSockTicks(70); // 3.5s of +10% Attribute Speed
+                        parryData.setLeatherSockTicks(70);
                     }
 
-                    player.getWorld().playSound(null, player.getBlockPos(), Riposte.PARRY_ROLL_SOUND, SoundCategory.PLAYERS, 1.0f, 1.0f);
+                    // NEW: Calculate the random pitch dynamically for the roll sound
+                    float rollPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
+                    player.getWorld().playSound(null, player.getBlockPos(), Riposte.PARRY_ROLL_SOUND, SoundCategory.PLAYERS, 1.0f, rollPitch);
+
                     parryData.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
-                    // Send the special packet telling the client it was a Fall Parry so it plays the roll!
+                    if (player.fallDistance > 8.0f && !player.getWorld().isClient) {
+                        net.minecraft.server.world.ServerWorld serverWorld = (net.minecraft.server.world.ServerWorld) player.getWorld();
+                        for (int i = 0; i < 36; i++) {
+                            double angle = i * (Math.PI * 2 / 36.0);
+                            double px = player.getX() + Math.cos(angle) * 1.5;
+                            double pz = player.getZ() + Math.sin(angle) * 1.5;
+                            serverWorld.spawnParticles(net.minecraft.particle.ParticleTypes.CLOUD, px, player.getY() + 0.2, pz, 1, Math.cos(angle)*0.2, 0.1, Math.sin(angle)*0.2, 0.05);
+                            serverWorld.spawnParticles(net.minecraft.particle.ParticleTypes.POOF, px, player.getY() + 0.2, pz, 1, Math.cos(angle)*0.2, 0.1, Math.sin(angle)*0.2, 0.05);
+                        }
+                    }
+
                     if (player instanceof ServerPlayerEntity serverPlayer) {
                         PacketByteBuf buf = PacketByteBufs.create();
-                        buf.writeBoolean(true); // isFallParry = true
+                        buf.writeBoolean(true);
                         ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, buf);
                     }
                     return;
@@ -238,7 +251,7 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                 if (player instanceof ServerPlayerEntity serverPlayer) {
                     PacketByteBuf buf = PacketByteBufs.create();
-                    buf.writeBoolean(false); // isFallParry = false
+                    buf.writeBoolean(false);
                     ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, buf);
                 }
 
