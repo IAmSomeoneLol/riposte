@@ -25,6 +25,7 @@ import net.minecraft.registry.Registry;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Rarity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,28 +56,31 @@ public class Riposte implements ModInitializer {
 	public static final Identifier PARRY_WEAPON_READY_ID = new Identifier(MOD_ID, "parry_weapon_ready");
 	public static final SoundEvent PARRY_WEAPON_READY_SOUND = SoundEvent.of(PARRY_WEAPON_READY_ID);
 
-	public static final Item IRON_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
-			"tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3");
+	public static final Identifier PARRY_ROLL_ID = new Identifier(MOD_ID, "parry_roll");
+	public static final SoundEvent PARRY_ROLL_SOUND = SoundEvent.of(PARRY_ROLL_ID);
 
-	public static final Item LEATHER_SOCK = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
-			"tooltip.riposte.passive.fall");
+	public static final Item IRON_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "parry", null,
+			"tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3", "tooltip.riposte.modifier.knockback_1_3", "tooltip.riposte.modifier.invuln_time_0_5");
 
-	public static final Item VOID_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
-			"tooltip.riposte.passive.all", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time_0_5");
+	public static final Item LEATHER_SOCK = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "parry", null,
+			"tooltip.riposte.passive.fall", "tooltip.riposte.modifier.speed_on_fall_parry");
 
-	public static final Item COPPER_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "parry", null,
+	public static final Item VOID_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "parry", null,
+			"tooltip.riposte.passive.all", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time_1");
+
+	public static final Item COPPER_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "parry", null,
 			"tooltip.riposte.passive.projectile", "tooltip.riposte.passive.fall", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time_1");
 
-	public static final Item BLOODLUSTFUL_RING = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "ring", null,
-			"tooltip.riposte.passive.bloodring_1", "tooltip.riposte.debuff.damage_taken", "tooltip.riposte.warning.no_stack");
+	public static final Item BLOODLUSTFUL_RING = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "ring", null,
+			"tooltip.riposte.passive.bloodring_1", "tooltip.riposte.modifier.kick_damage_1_6", "tooltip.riposte.debuff.damage_taken", "tooltip.riposte.warning.no_stack");
 
-	public static final Item HONORABLE_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "cape", null,
+	public static final Item HONORABLE_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "cape", null,
 			"tooltip.riposte.passive.charge_meter", "tooltip.riposte.passive.damage_dealt");
 
-	public static final Item NEURAL_LINK = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "hat", null,
-			"tooltip.riposte.modifier.recharge_rate_100");
+	public static final Item NEURAL_LINK = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "hat", null,
+			"tooltip.riposte.modifier.recharge_rate_100", "tooltip.riposte.modifier.auto_fall_parry_25");
 
-	public static final Item SHULKER_HEAD_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1), "charm", "head/hat",
+	public static final Item SHULKER_HEAD_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "charm", "head/hat",
 			"tooltip.riposte.passive.head_slot", "tooltip.riposte.warning.no_stack");
 
 	public static final Identifier PARRY_SYNC_PACKET = new Identifier(MOD_ID, "parry_sync");
@@ -98,6 +102,7 @@ public class Riposte implements ModInitializer {
 		Registry.register(Registries.SOUND_EVENT, LETHAL_PARRY_ID, LETHAL_PARRY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, PARRY_FIST_READY_ID, PARRY_FIST_READY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, PARRY_WEAPON_READY_ID, PARRY_WEAPON_READY_SOUND);
+		Registry.register(Registries.SOUND_EVENT, PARRY_ROLL_ID, PARRY_ROLL_SOUND);
 
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "iron_guard"), IRON_GUARD);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "leather_sock"), LEATHER_SOCK);
@@ -148,7 +153,6 @@ public class Riposte implements ModInitializer {
 						.with(ItemEntry.builder(IRON_GUARD)).build());
 			}
 
-			// Stupidy Rare: 0.5% Drop Rate
 			if (id.equals(LootTables.END_CITY_TREASURE_CHEST)) {
 				tableBuilder.pool(LootPool.builder().rolls(ConstantLootNumberProvider.create(1))
 						.conditionally(RandomChanceLootCondition.builder(0.005f))

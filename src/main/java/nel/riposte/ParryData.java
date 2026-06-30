@@ -21,6 +21,9 @@ public interface ParryData {
     int getLastParriedEntityId();
     void setLastParriedEntityId(int id);
 
+    void setLeatherSockTicks(int ticks);
+    int getLeatherSockTicks();
+
     default boolean isParryActive(int windowMs) {
         long timeSinceParry = System.currentTimeMillis() - getParryTimestamp();
         return timeSinceParry >= 0 && timeSinceParry <= windowMs;
@@ -68,10 +71,8 @@ public interface ParryData {
         var component = TrinketsApi.getTrinketComponent(player).orElse(null);
         if (component == null) return false;
 
-        // Void Guard allows ALL parries
         if (component.isEquipped(Riposte.VOID_GUARD)) return true;
 
-        // Copper Guard and Leather Sock allow fall damage parries
         if (source.isOf(DamageTypes.FALL) && (component.isEquipped(Riposte.LEATHER_SOCK) || component.isEquipped(Riposte.COPPER_GUARD))) return true;
 
         boolean hasPlate = component.isEquipped(Riposte.IRON_GUARD) || component.isEquipped(Riposte.COPPER_GUARD);

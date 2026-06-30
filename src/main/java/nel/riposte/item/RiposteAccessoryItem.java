@@ -46,11 +46,13 @@ public class RiposteAccessoryItem extends TrinketItem {
         if (this.tooltipKeys.length > 0) {
             tooltip.add(Text.empty());
 
+            // Renders the "When in [Slot]:" text in Gold (Orange)
             tooltip.add(Text.translatable("tooltip.riposte.slot." + this.targetSlot).formatted(Formatting.GOLD));
 
             for (String key : tooltipKeys) {
                 Formatting color = Formatting.BLUE;
 
+                // Only debuffs will be painted Dark Red
                 if (key.contains("debuff")) {
                     color = Formatting.DARK_RED;
                 }

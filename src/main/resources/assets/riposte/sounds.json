@@ -44,5 +44,11 @@
     "sounds": [
       "riposte:parry_weapon_ready"
     ]
+  },
+  "parry_roll": {
+    "category": "player",
+    "sounds": [
+      "riposte:parry_roll"
+    ]
   }
 }

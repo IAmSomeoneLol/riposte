@@ -12,6 +12,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageTypes;
 import net.minecraft.entity.mob.ElderGuardianEntity;
 import net.minecraft.entity.mob.WardenEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -79,6 +80,16 @@ public abstract class LivingEntityMixin implements HitstopData {
             if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
                 modifiedAmount *= 1.1f;
             }
+
+            if (component != null && component.isEquipped(Riposte.BLOODLUSTFUL_RING)) {
+                ParryData parryData = (ParryData) attacker;
+                if (((Object) this instanceof LivingEntity victim) && victim.getId() == parryData.getLastParriedEntityId()) {
+                    long timeSinceParry = System.currentTimeMillis() - parryData.getSuccessfulParryTimestamp();
+                    if (timeSinceParry <= Riposte.CONFIG.kickComboWindowMs) {
+                        modifiedAmount *= 1.6f;
+                    }
+                }
+            }
         }
 
         if ((Object) this instanceof PlayerEntity victim) {
@@ -91,7 +102,6 @@ public abstract class LivingEntityMixin implements HitstopData {
         return modifiedAmount;
     }
 
-    // BLOCK POTION/WEAPON EFFECTS WHILE PARRYING
     @Inject(method = "addStatusEffect(Lnet/minecraft/entity/effect/StatusEffectInstance;Lnet/minecraft/entity/Entity;)Z", at = @At("HEAD"), cancellable = true)
     private void riposte$blockDebuffsDuringParry(StatusEffectInstance effect, Entity source, CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof PlayerEntity player) {
@@ -115,24 +125,52 @@ public abstract class LivingEntityMixin implements HitstopData {
 
             int currentWindow = parryData.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
+            // NEURAL LINK: Auto-Parry Fall Damage Logic
+            if (source.isOf(DamageTypes.FALL) && !parryData.isParryActive(currentWindow)) {
+                var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+                int neuralCount = component != null ? component.getEquipped(Riposte.NEURAL_LINK).size() : 0;
+                if (neuralCount > 0 && player.getWorld().getRandom().nextFloat() < (0.25f * neuralCount)) {
+                    int cooldown = parryData.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
+                    if (parryData.canParry(cooldown)) {
+                        parryData.setParryTimestamp(System.currentTimeMillis());
+                    }
+                }
+            }
+
             if (parryData.isParryActive(currentWindow)) {
 
                 if (!Riposte.CONFIG.allowMultiParry && parryData.getSuccessfulParryTimestamp() >= parryData.getParryTimestamp()) {
                     return;
                 }
 
-                // Cance the raw damage
                 cir.setReturnValue(false);
-
-                // Instantly kill any fire that was applied right before this damage ticked!
                 player.extinguish();
 
                 int iFrames = 10;
                 var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+
+                // FALL DAMAGE PARRY EXECUTION
+                if (source.isOf(DamageTypes.FALL)) {
+                    if (component != null && component.isEquipped(Riposte.LEATHER_SOCK)) {
+                        parryData.setLeatherSockTicks(70); // 3.5s of +10% Attribute Speed
+                    }
+
+                    player.getWorld().playSound(null, player.getBlockPos(), Riposte.PARRY_ROLL_SOUND, SoundCategory.PLAYERS, 1.0f, 1.0f);
+                    parryData.setSuccessfulParryTimestamp(System.currentTimeMillis());
+
+                    // Send the special packet telling the client it was a Fall Parry so it plays the roll!
+                    if (player instanceof ServerPlayerEntity serverPlayer) {
+                        PacketByteBuf buf = PacketByteBufs.create();
+                        buf.writeBoolean(true); // isFallParry = true
+                        ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, buf);
+                    }
+                    return;
+                }
+
                 if (component != null) {
-                    if (component.isEquipped(Riposte.COPPER_GUARD)) {
+                    if (component.isEquipped(Riposte.COPPER_GUARD) || component.isEquipped(Riposte.VOID_GUARD)) {
                         iFrames = 30;
-                    } else if (component.isEquipped(Riposte.VOID_GUARD)) {
+                    } else if (component.isEquipped(Riposte.IRON_GUARD)) {
                         iFrames = 20;
                     }
                 }
@@ -199,7 +237,9 @@ public abstract class LivingEntityMixin implements HitstopData {
                 parryData.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
                 if (player instanceof ServerPlayerEntity serverPlayer) {
-                    ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, PacketByteBufs.create());
+                    PacketByteBuf buf = PacketByteBufs.create();
+                    buf.writeBoolean(false); // isFallParry = false
+                    ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, buf);
                 }
 
                 if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
@@ -209,16 +249,21 @@ public abstract class LivingEntityMixin implements HitstopData {
                 if (rawAttacker instanceof LivingEntity attacker) {
                     parryData.setLastParriedEntityId(attacker.getId());
 
+                    double kbStrength = Riposte.CONFIG.parryKnockback;
+                    if (component != null && component.isEquipped(Riposte.IRON_GUARD)) {
+                        kbStrength *= 1.3;
+                    }
+
                     boolean isBoss = attacker instanceof WitherEntity ||
                             attacker instanceof EnderDragonEntity ||
                             attacker instanceof WardenEntity ||
                             attacker instanceof ElderGuardianEntity;
 
                     if (isBoss) {
-                        parryData.applyParryKnockback(attacker, Riposte.CONFIG.parryKnockback, player.getX() - attacker.getX(), player.getZ() - attacker.getZ());
-                        parryData.applyParryKnockback(player, Riposte.CONFIG.parryKnockback, attacker.getX() - player.getX(), attacker.getZ() - player.getZ());
+                        parryData.applyParryKnockback(attacker, kbStrength, player.getX() - attacker.getX(), player.getZ() - attacker.getZ());
+                        parryData.applyParryKnockback(player, kbStrength, attacker.getX() - player.getX(), attacker.getZ() - player.getZ());
                     } else {
-                        parryData.applyParryKnockback(attacker, Riposte.CONFIG.parryKnockback, player.getX() - attacker.getX(), player.getZ() - attacker.getZ());
+                        parryData.applyParryKnockback(attacker, kbStrength, player.getX() - attacker.getX(), player.getZ() - attacker.getZ());
                     }
 
                     if (Riposte.CONFIG.hitstop) {

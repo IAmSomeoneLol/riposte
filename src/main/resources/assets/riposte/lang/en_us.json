@@ -31,6 +31,10 @@
   "tooltip.riposte.modifier.recharge_rate_100": " +100% Parry Recharge Rate",
   "tooltip.riposte.modifier.invuln_time_1": " +1s Invulnerability Time",
   "tooltip.riposte.modifier.invuln_time_0_5": " +0.5s Invulnerability Time",
+  "tooltip.riposte.modifier.knockback_1_3": " +1.3x Parry Knockback",
+  "tooltip.riposte.modifier.speed_on_fall_parry": " +10% Movement Speed (3.5s) on Fall Parry",
+  "tooltip.riposte.modifier.kick_damage_1_6": " +1.6x Kick Hit Damage",
+  "tooltip.riposte.modifier.auto_fall_parry_25": " 25% Chance to Auto-Parry Fall Damage",
 
   "tooltip.riposte.warning.no_stack": " Does not stack with itself",
 

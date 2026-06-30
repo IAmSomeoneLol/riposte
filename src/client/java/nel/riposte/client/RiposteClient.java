@@ -72,6 +72,8 @@ public class RiposteClient implements ClientModInitializer {
 	private static int renderTopPadding = 0;
 	private static int renderBottomPadding = 0;
 
+	public static String currentParryAnimation = "";
+
 	@Override
 	public void onInitializeClient() {
 		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new, RegisterType.CLIENT);
@@ -203,6 +205,8 @@ public class RiposteClient implements ClientModInitializer {
 		});
 
 		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_SUCCESS_PACKET, (client, handler, buf, responseSender) -> {
+			boolean isFallParry = buf.readBoolean();
+
 			client.execute(() -> {
 				if (client.player != null) {
 					ParryData data = (ParryData) client.player;
@@ -213,12 +217,16 @@ public class RiposteClient implements ClientModInitializer {
 						data.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
 					}
 
-					ItemStack stack = client.player.getMainHandStack();
-					boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
-
-					String[] weaponAnims = {"parry_weapon", "parry_weapon1", "parry_weapon2", "parry_weapon3"};
-					String[] fistAnims = {"parry_fist", "parry_fist1", "parry_fist2"};
-					String animName = isWeapon ? weaponAnims[random.nextInt(4)] : fistAnims[random.nextInt(3)];
+					String animName;
+					if (isFallParry) {
+						animName = "parry_fall_damage";
+					} else {
+						ItemStack stack = client.player.getMainHandStack();
+						boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
+						String[] weaponAnims = {"parry_weapon", "parry_weapon1", "parry_weapon2", "parry_weapon3"};
+						String[] fistAnims = {"parry_fist", "parry_fist1", "parry_fist2"};
+						animName = isWeapon ? weaponAnims[random.nextInt(4)] : fistAnims[random.nextInt(3)];
+					}
 
 					playFirstPersonAnimation((AbstractClientPlayerEntity) client.player, animName);
 				}
@@ -247,6 +255,23 @@ public class RiposteClient implements ClientModInitializer {
 						client.gameRenderer.disablePostProcessor();
 					}
 					shaderActive = false;
+				}
+			}
+
+			if (client.player != null) {
+				ParryData data = (ParryData) client.player;
+				int currentWindow = data.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
+
+				if (!data.isParryActive(currentWindow)) {
+					if (currentParryAnimation.equals("parry_fist_ready") || currentParryAnimation.equals("parry_weapon_ready")) {
+						if (client.options.attackKey.isPressed() || client.options.useKey.isPressed()) {
+							var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
+							if (animationContainer != null) {
+								animationContainer.setAnimation(null);
+								currentParryAnimation = "";
+							}
+						}
+					}
 				}
 			}
 
@@ -373,6 +398,9 @@ public class RiposteClient implements ClientModInitializer {
 
 	private static void playFirstPersonAnimation(AbstractClientPlayerEntity player, String requestedAnimName) {
 		String animName = requestedAnimName;
+
+		currentParryAnimation = animName;
+
 		var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
 
 		if (animation == null && (animName.endsWith("1") || animName.endsWith("2") || animName.endsWith("3"))) {
@@ -391,7 +419,11 @@ public class RiposteClient implements ClientModInitializer {
 
 				boolean isKick = animName.contains("kick_hit");
 				boolean isWeaponAnim = animName.contains("weapon");
-				boolean showLeft = isKick || isWeaponAnim;
+
+				// Fall damage animation involves bracing both arms!
+				boolean isFall = animName.contains("fall_damage");
+
+				boolean showLeft = isKick || isWeaponAnim || isFall;
 				renderLeftArm = showLeft;
 
 				keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, showLeft, true, showLeft));

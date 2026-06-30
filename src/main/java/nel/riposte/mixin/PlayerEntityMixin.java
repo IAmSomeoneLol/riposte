@@ -8,6 +8,8 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
@@ -30,6 +32,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
+import java.util.UUID;
 
 @Mixin(PlayerEntity.class)
 public class PlayerEntityMixin implements ParryData {
@@ -45,6 +48,12 @@ public class PlayerEntityMixin implements ParryData {
 
     @Unique
     private int lastParriedEntityId = -1;
+
+    @Unique
+    private int leatherSockTicks = 0;
+
+    @Unique
+    private static final UUID LEATHER_SOCK_SPEED_UUID = UUID.fromString("b5b8d810-761e-45fa-8eb8-4dc4eb6b871c");
 
     @Override
     public long getParryTimestamp() {
@@ -86,13 +95,42 @@ public class PlayerEntityMixin implements ParryData {
         this.lastParriedEntityId = id;
     }
 
-    // BLOCK FIRE FROM MODS OR ENCHANTMENTS WHILE PARRYING
+    @Override
+    public void setLeatherSockTicks(int ticks) {
+        this.leatherSockTicks = ticks;
+    }
+
+    @Override
+    public int getLeatherSockTicks() {
+        return this.leatherSockTicks;
+    }
+
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void riposte$tickLeatherSockAttribute(CallbackInfo ci) {
+        PlayerEntity player = (PlayerEntity) (Object) this;
+        if (!player.getWorld().isClient) {
+            var speedAttr = player.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
+            if (speedAttr != null) {
+                if (this.leatherSockTicks > 0) {
+                    this.leatherSockTicks--;
+                    if (speedAttr.getModifier(LEATHER_SOCK_SPEED_UUID) == null) {
+                        // Adds +10% to their total calculation
+                        speedAttr.addTemporaryModifier(new EntityAttributeModifier(LEATHER_SOCK_SPEED_UUID, "Leather Sock Speed", 0.1, EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
+                    }
+                } else {
+                    if (speedAttr.getModifier(LEATHER_SOCK_SPEED_UUID) != null) {
+                        speedAttr.removeModifier(LEATHER_SOCK_SPEED_UUID);
+                    }
+                }
+            }
+        }
+    }
+
     @Inject(method = "setFireTicks", at = @At("HEAD"), cancellable = true)
     private void riposte$blockFireDuringParry(int ticks, CallbackInfo ci) {
         PlayerEntity player = (PlayerEntity) (Object) this;
         int currentWindow = this.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
-        // If the game is trying to ADD fire to the player while they are actively parrying
         if (ticks > player.getFireTicks() && this.isParryActive(currentWindow)) {
             ci.cancel();
         }
@@ -195,7 +233,9 @@ public class PlayerEntityMixin implements ParryData {
                 }
 
                 if (player instanceof ServerPlayerEntity serverPlayer) {
-                    ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, PacketByteBufs.create());
+                    PacketByteBuf successBuf = PacketByteBufs.create();
+                    successBuf.writeBoolean(false); // isFallParry = false
+                    ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, successBuf);
                 }
             }
         }
@@ -209,9 +249,16 @@ public class PlayerEntityMixin implements ParryData {
 
                 if (timeSinceParry <= Riposte.CONFIG.kickComboWindowMs) {
                     PlayerEntity player = (PlayerEntity) (Object) this;
+
                     double heavyKnockback = Riposte.CONFIG.parryKnockback * Riposte.CONFIG.kickComboKnockbackMultiplier;
 
+                    var component = TrinketsApi.getTrinketComponent(player).orElse(null);
+                    if (component != null && component.isEquipped(Riposte.IRON_GUARD)) {
+                        heavyKnockback *= 1.3;
+                    }
+
                     this.applyParryKnockback(livingTarget, heavyKnockback, player.getX() - livingTarget.getX(), player.getZ() - livingTarget.getZ());
+
                     this.lastParriedEntityId = -1;
 
                     float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.4f;
