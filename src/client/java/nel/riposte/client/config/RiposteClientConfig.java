@@ -54,8 +54,9 @@ public class RiposteClientConfig extends Config {
     public ConfigGroup cameraRecoilGroup = new ConfigGroup("cameraRecoil");
     public boolean cameraRecoil = true;
     public float recoilIntensity = 50.5f;
-    @ConfigGroup.Pop
     public int recoilDurationMs = 750;
+    @ConfigGroup.Pop
+    public boolean parryFallCameraFlow = true;
 
     public ConfigGroup fovSettingsGroup = new ConfigGroup("fovSettings");
     public boolean fovChange = true;

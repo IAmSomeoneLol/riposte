@@ -92,6 +92,7 @@
   "riposte.client.cameraRecoil": "Camera Recoil",
   "riposte.client.recoilIntensity": "Recoil Intensity",
   "riposte.client.recoilDurationMs": "Recoil Duration (ms)",
+  "riposte.client.parryFallCameraFlow": "Parry Fall Camera Flow",
   "riposte.client.fovSettings": "FOV Settings",
   "riposte.client.fovChange": "FOV Change",
   "riposte.client.fovZoom": "FOV Zoom Out",

@@ -42,11 +42,10 @@ public abstract class CameraMixin {
             float ease = (float) Math.pow(1.0 - progress, 3);
 
             if (RiposteClient.lastParryWasFall) {
-                // NEW: If it's a fall parry, apply the recoil directly into the downward Pitch.
-                // In Minecraft, positive pitch makes you look down at the floor!
+                // Slam the crosshair down towards the floor on landing
                 finalPitchOffset += RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
             } else {
-                // Regular parries still randomize the recoil direction
+                // Random recoil direction for normal combat parries
                 Random rand = new Random(data.getSuccessfulParryTimestamp());
                 double angle = rand.nextDouble() * Math.PI * 2.0;
 
@@ -58,7 +57,7 @@ public abstract class CameraMixin {
             }
         }
 
-        // We completely ignore the micro-screen shake for the fall parry so it's a smooth impact
+        // Standard combat camera micro-shake (ignored during a fall parry)
         if (RiposteClient.CLIENT_CONFIG.cameraShake && timeSince < 250 && !RiposteClient.lastParryWasFall) {
             float progress = (float) timeSince / 250f;
             float fade = Math.max(0.0f, 1.0f - progress);
@@ -73,6 +72,15 @@ public abstract class CameraMixin {
             upMove = noiseY * RiposteClient.CLIENT_CONFIG.cameraWalkAmplitude * fade;
 
             forwardMove = -RiposteClient.CLIENT_CONFIG.cameraPushback * fade;
+        }
+
+        // NEW: Camera Flow (Downward dip on fall parry to simulate crouching/impact)
+        if (RiposteClient.CLIENT_CONFIG.parryFallCameraFlow && RiposteClient.lastParryWasFall && timeSince < 1000) {
+            float progress = (float) timeSince / 1000f; // 1 second duration
+            float ease = (float) Math.pow(1.0 - progress, 3); // Cubic ease out
+
+            // Instantly shoves the camera down -0.75 blocks, then glides smoothly back to 0
+            upMove -= 0.75f * ease;
         }
 
         this.moveBy(forwardMove, upMove, rightMove);
