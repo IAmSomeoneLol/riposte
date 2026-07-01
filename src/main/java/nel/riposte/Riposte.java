@@ -7,6 +7,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper; // NEW
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.ItemStack;
@@ -22,6 +23,7 @@ import net.minecraft.registry.Registries;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.registry.Registry;
+import net.minecraft.resource.ResourceType; // NEW
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
@@ -59,6 +61,9 @@ public class Riposte implements ModInitializer {
 	public static final Identifier PARRY_ROLL_ID = new Identifier(MOD_ID, "parry_roll");
 	public static final SoundEvent PARRY_ROLL_SOUND = SoundEvent.of(PARRY_ROLL_ID);
 
+	public static final Identifier FINISHER_FIST_ID = new Identifier(MOD_ID, "finisher_fist");
+	public static final SoundEvent FINISHER_FIST_SOUND = SoundEvent.of(FINISHER_FIST_ID);
+
 	public static final Item IRON_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "parry", null,
 			"tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3", "tooltip.riposte.modifier.knockback_1_3", "tooltip.riposte.modifier.invuln_time_0_5");
 
@@ -89,9 +94,16 @@ public class Riposte implements ModInitializer {
 	public static final Identifier PARRY_VFX_PACKET = new Identifier(MOD_ID, "parry_vfx");
 	public static final Identifier LETHAL_VFX_PACKET = new Identifier(MOD_ID, "lethal_vfx");
 
+	public static final Identifier EXECUTE_FINISHER_PACKET = new Identifier(MOD_ID, "execute_finisher");
+	public static final Identifier START_FINISHER_ANIM_PACKET = new Identifier(MOD_ID, "start_finisher_anim");
+	public static final Identifier SYNC_FINISHER_GAUGE_PACKET = new Identifier(MOD_ID, "sync_finisher_gauge");
+
 	@Override
 	public void onInitialize() {
 		CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteConfig::new);
+
+		// --- NEW: Registers your JSON Finisher engine with the server! ---
+		ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new FinisherLoader());
 
 		Registry.register(Registries.PARTICLE_TYPE, new Identifier(MOD_ID, "parry_trail"), PARRY_TRAIL);
 		Registry.register(Registries.PARTICLE_TYPE, new Identifier(MOD_ID, "parry_trail_light"), PARRY_TRAIL_LIGHT);
@@ -103,6 +115,7 @@ public class Riposte implements ModInitializer {
 		Registry.register(Registries.SOUND_EVENT, PARRY_FIST_READY_ID, PARRY_FIST_READY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, PARRY_WEAPON_READY_ID, PARRY_WEAPON_READY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, PARRY_ROLL_ID, PARRY_ROLL_SOUND);
+		Registry.register(Registries.SOUND_EVENT, FINISHER_FIST_ID, FINISHER_FIST_SOUND);
 
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "iron_guard"), IRON_GUARD);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "leather_sock"), LEATHER_SOCK);
@@ -139,6 +152,33 @@ public class Riposte implements ModInitializer {
 						SoundEvent soundToPlay = isWeapon ? PARRY_WEAPON_READY_SOUND : PARRY_FIST_READY_SOUND;
 
 						player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 0.25f, randomPitch);
+					}
+				}
+			});
+		});
+
+		ServerPlayNetworking.registerGlobalReceiver(EXECUTE_FINISHER_PACKET, (server, player, handler, buf, responseSender) -> {
+			int targetId = buf.readInt();
+			server.execute(() -> {
+				if (CONFIG.addons.finishers.enableFinishers && player instanceof FinisherData finisherData) {
+					if (finisherData.isExecutingFinisher()) return;
+
+					boolean canExecute = false;
+
+					if (CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
+						if (finisherData.getFinisherGauge(targetId) >= 100f) {
+							finisherData.consumeFinisherGauge(targetId, 100f);
+							canExecute = true;
+						}
+					} else {
+						if (finisherData.getParryCount(targetId) >= CONFIG.addons.finishers.finisherParryCountMax) {
+							finisherData.clearParryCount(targetId);
+							canExecute = true;
+						}
+					}
+
+					if (canExecute) {
+						finisherData.startFinisher(targetId);
 					}
 				}
 			});

@@ -1,11 +1,16 @@
 package nel.riposte.mixin;
 
 import dev.emi.trinkets.api.TrinketsApi;
+import nel.riposte.FinisherData;
+import nel.riposte.FinisherDefinition;
+import nel.riposte.FinisherLoader;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
+import nel.riposte.config.RiposteConfig;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
@@ -14,15 +19,23 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.MiningToolItem;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.TridentItem;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.particle.BlockStateParticleEffect;
+import net.minecraft.particle.DefaultParticleType;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,78 +44,304 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Mixin(PlayerEntity.class)
-public class PlayerEntityMixin implements ParryData {
+public class PlayerEntityMixin implements ParryData, FinisherData {
 
-    @Unique
-    private long parryTimestamp = 0L;
+    @Unique private long parryTimestamp = 0L;
+    @Unique private long successfulParryTimestamp = 0L;
+    @Unique private long successfulComboTimestamp = 0L;
+    @Unique private int lastParriedEntityId = -1;
+    @Unique private int leatherSockTicks = 0;
+    @Unique private static final UUID LEATHER_SOCK_SPEED_UUID = UUID.fromString("b5b8d810-761e-45fa-8eb8-4dc4eb6b871c");
 
-    @Unique
-    private long successfulParryTimestamp = 0L;
+    @Unique private boolean riposte$isExecutingFinisher = false;
+    @Unique private int riposte$finisherTargetId = -1;
+    @Unique private int riposte$finisherTick = 0;
 
-    @Unique
-    private long successfulComboTimestamp = 0L;
+    // NEW: Data-Driven ID Tracker
+    @Unique private String riposte$activeFinisherId = "";
 
-    @Unique
-    private int lastParriedEntityId = -1;
+    // The 0.4s (8 ticks) Grace Period Tracker
+    @Unique private int riposte$postFinisherInvulnTicks = 0;
 
-    @Unique
-    private int leatherSockTicks = 0;
+    @Unique private Map<Integer, Float> riposte$gaugeMeters = new HashMap<>();
+    @Unique private Map<Integer, Integer> riposte$parryCounts = new HashMap<>();
+    @Unique private Map<Integer, Long> riposte$gaugeReadyTimestamps = new HashMap<>();
+    @Unique private Map<Integer, Long> riposte$parryReadyTimestamps = new HashMap<>();
+    @Unique private Set<Integer> riposte$deflectedProjectiles = new HashSet<>();
 
-    @Unique
-    private static final UUID LEATHER_SOCK_SPEED_UUID = UUID.fromString("b5b8d810-761e-45fa-8eb8-4dc4eb6b871c");
+    @Override public long getParryTimestamp() { return this.parryTimestamp; }
+    @Override public void setParryTimestamp(long timestamp) { this.parryTimestamp = timestamp; }
+    @Override public long getSuccessfulParryTimestamp() { return this.successfulParryTimestamp; }
+    @Override public void setSuccessfulParryTimestamp(long timestamp) { this.successfulParryTimestamp = timestamp; }
+    @Override public long getSuccessfulComboTimestamp() { return this.successfulComboTimestamp; }
+    @Override public void setSuccessfulComboTimestamp(long timestamp) { this.successfulComboTimestamp = timestamp; }
+    @Override public int getLastParriedEntityId() { return this.lastParriedEntityId; }
+    @Override public void setLastParriedEntityId(int id) { this.lastParriedEntityId = id; }
+    @Override public void setLeatherSockTicks(int ticks) { this.leatherSockTicks = ticks; }
+    @Override public int getLeatherSockTicks() { return this.leatherSockTicks; }
+
+    @Override public boolean isExecutingFinisher() { return this.riposte$isExecutingFinisher; }
+    @Override public int getFinisherTargetId() { return this.riposte$finisherTargetId; }
+    @Override public int getFinisherTick() { return this.riposte$finisherTick; }
+
+    // NEW Data-Driven Accessors
+    @Override public String getActiveFinisherId() { return this.riposte$activeFinisherId; }
+    @Override public void setActiveFinisherId(String id) { this.riposte$activeFinisherId = id; }
+
+    @Override public int getPostFinisherInvuln() { return this.riposte$postFinisherInvulnTicks; }
+    @Override public void setPostFinisherInvuln(int ticks) { this.riposte$postFinisherInvulnTicks = ticks; }
+
+    @Override public void markProjectileDeflected(int projectileId) { this.riposte$deflectedProjectiles.add(projectileId); }
+    @Override public boolean isProjectileDeflected(int projectileId) { return this.riposte$deflectedProjectiles.contains(projectileId); }
+
+    @Override public float getFinisherGauge(int targetId) { return this.riposte$gaugeMeters.getOrDefault(targetId, 0f); }
+    @Override public int getParryCount(int targetId) { return this.riposte$parryCounts.getOrDefault(targetId, 0); }
+    @Override public void clearParryCount(int targetId) { this.riposte$parryCounts.remove(targetId); this.riposte$parryReadyTimestamps.remove(targetId); }
+    @Override public long getGaugeReadyTimestamp(int targetId) { return this.riposte$gaugeReadyTimestamps.getOrDefault(targetId, 0L); }
+    @Override public void setGaugeReadyTimestamp(int targetId, long time) { this.riposte$gaugeReadyTimestamps.put(targetId, time); }
+    @Override public long getParryReadyTimestamp(int targetId) { return this.riposte$parryReadyTimestamps.getOrDefault(targetId, 0L); }
+    @Override public void setParryReadyTimestamp(int targetId, long time) { this.riposte$parryReadyTimestamps.put(targetId, time); }
 
     @Override
-    public long getParryTimestamp() {
-        return this.parryTimestamp;
+    public void addFinisherGauge(int targetId, float amount) {
+        float before = getFinisherGauge(targetId);
+        float after = Math.min(300f, before + amount);
+        this.riposte$gaugeMeters.put(targetId, after);
+
+        if (before < 100f && after >= 100f) {
+            this.setGaugeReadyTimestamp(targetId, System.currentTimeMillis());
+        }
     }
 
     @Override
-    public void setParryTimestamp(long timestamp) {
-        this.parryTimestamp = timestamp;
+    public void consumeFinisherGauge(int targetId, float amount) {
+        float after = Math.max(0f, getFinisherGauge(targetId) - amount);
+        this.riposte$gaugeMeters.put(targetId, after);
+        if (after < 100f) {
+            this.riposte$gaugeReadyTimestamps.remove(targetId);
+        }
     }
 
     @Override
-    public long getSuccessfulParryTimestamp() {
-        return this.successfulParryTimestamp;
+    public void setFinisherGauge(int targetId, float amount) {
+        float before = getFinisherGauge(targetId);
+        this.riposte$gaugeMeters.put(targetId, amount);
+        if (before < 100f && amount >= 100f) {
+            this.setGaugeReadyTimestamp(targetId, System.currentTimeMillis());
+        } else if (amount < 100f) {
+            this.riposte$gaugeReadyTimestamps.remove(targetId);
+        }
     }
 
     @Override
-    public void setSuccessfulParryTimestamp(long timestamp) {
-        this.successfulParryTimestamp = timestamp;
+    public void addParryCount(int targetId) {
+        int current = getParryCount(targetId);
+        this.riposte$parryCounts.put(targetId, current + 1);
+
+        if (current + 1 == Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
+            this.setParryReadyTimestamp(targetId, System.currentTimeMillis());
+        }
     }
 
     @Override
-    public long getSuccessfulComboTimestamp() {
-        return this.successfulComboTimestamp;
+    public void setParryCount(int targetId, int amount) {
+        this.riposte$parryCounts.put(targetId, amount);
+        if (amount >= Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
+            this.setParryReadyTimestamp(targetId, System.currentTimeMillis());
+        } else {
+            this.riposte$parryReadyTimestamps.remove(targetId);
+        }
     }
 
     @Override
-    public void setSuccessfulComboTimestamp(long timestamp) {
-        this.successfulComboTimestamp = timestamp;
+    public void startFinisher(int targetId) {
+        PlayerEntity player = (PlayerEntity) (Object) this;
+        Entity targetRaw = player.getWorld().getEntityById(targetId);
+
+        if (targetRaw instanceof LivingEntity target) {
+            ItemStack stack = player.getMainHandStack();
+            boolean hasWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
+
+            // --- DATA-DRIVEN CHECK: Query the JSON engine for a valid finisher! ---
+            FinisherDefinition def = FinisherLoader.getValidFinisher(target, hasWeapon);
+            if (def == null) return; // No matching JSON file found for this mob size!
+
+            this.riposte$isExecutingFinisher = true;
+            this.riposte$finisherTargetId = targetId;
+            this.riposte$finisherTick = 0;
+            this.riposte$activeFinisherId = def.id;
+
+            if (!player.getWorld().isClient) {
+                for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
+                    PacketByteBuf buf = PacketByteBufs.create();
+                    buf.writeUuid(player.getUuid());
+                    buf.writeInt(targetId);
+                    buf.writeString(def.id); // SYNC JSON ID TO CLIENT
+                    ServerPlayNetworking.send(tracker, Riposte.START_FINISHER_ANIM_PACKET, buf);
+                }
+                if (player instanceof ServerPlayerEntity serverPlayer) {
+                    PacketByteBuf buf = PacketByteBufs.create();
+                    buf.writeUuid(player.getUuid());
+                    buf.writeInt(targetId);
+                    buf.writeString(def.id); // SYNC JSON ID TO CLIENT
+                    ServerPlayNetworking.send(serverPlayer, Riposte.START_FINISHER_ANIM_PACKET, buf);
+                }
+            }
+        }
     }
 
     @Override
-    public int getLastParriedEntityId() {
-        return this.lastParriedEntityId;
+    public void cancelFinisher() {
+        if (this.riposte$isExecutingFinisher) {
+            this.riposte$postFinisherInvulnTicks = 8;
+        }
+        this.riposte$isExecutingFinisher = false;
+        this.riposte$finisherTick = 0;
+        this.riposte$activeFinisherId = "";
     }
 
-    @Override
-    public void setLastParriedEntityId(int id) {
-        this.lastParriedEntityId = id;
+    @Inject(method = "tick", at = @At("HEAD"))
+    private void riposte$tickPostFinisherInvuln(CallbackInfo ci) {
+        if (this.riposte$postFinisherInvulnTicks > 0) {
+            this.riposte$postFinisherInvulnTicks--;
+        }
     }
 
-    @Override
-    public void setLeatherSockTicks(int ticks) {
-        this.leatherSockTicks = ticks;
+    @Inject(method = "tickMovement", at = @At("HEAD"))
+    private void riposte$lockPlayerDuringFinisher(CallbackInfo ci) {
+        PlayerEntity player = (PlayerEntity) (Object) this;
+        if (this.riposte$isExecutingFinisher) {
+            player.forwardSpeed = 0.0f;
+            player.sidewaysSpeed = 0.0f;
+            player.upwardSpeed = 0.0f;
+            player.setJumping(false);
+            player.setSprinting(false);
+        }
     }
 
-    @Override
-    public int getLeatherSockTicks() {
-        return this.leatherSockTicks;
+    @Inject(method = "tick", at = @At("TAIL"))
+    private void riposte$processFinisherSequence(CallbackInfo ci) {
+        PlayerEntity player = (PlayerEntity) (Object) this;
+        long now = System.currentTimeMillis();
+
+        if (Riposte.CONFIG.addons.finishers.enableFinishers && player.age % 20 == 0) {
+            if (Riposte.CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
+                this.riposte$gaugeMeters.keySet().removeIf(id -> {
+                    float current = this.riposte$gaugeMeters.getOrDefault(id, 0f);
+                    if (current >= 100f) {
+                        long readyTime = this.getGaugeReadyTimestamp(id);
+                        if (readyTime > 0 && (now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs)) {
+                            this.riposte$gaugeReadyTimestamps.remove(id);
+                            return true;
+                        }
+                    } else if (current > 0) {
+                        this.riposte$gaugeMeters.put(id, Math.max(0f, current - Riposte.CONFIG.addons.finishers.finisherGaugeConsumptionPerSecond));
+                    }
+                    return false;
+                });
+            } else {
+                this.riposte$parryCounts.entrySet().removeIf(entry -> {
+                    int targetId = entry.getKey();
+                    if (entry.getValue() >= Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
+                        long readyTime = this.getParryReadyTimestamp(targetId);
+                        return readyTime > 0 && (now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs);
+                    }
+                    return false;
+                });
+            }
+        }
+
+        if (this.riposte$isExecutingFinisher) {
+            this.riposte$finisherTick++;
+
+            FinisherDefinition def = FinisherLoader.getFinisherById(this.riposte$activeFinisherId);
+            if (def == null) {
+                this.cancelFinisher();
+                return;
+            }
+
+            Entity targetRaw = player.getWorld().getEntityById(this.riposte$finisherTargetId);
+
+            if (targetRaw instanceof LivingEntity target && target.isAlive()) {
+
+                // --- DYNAMIC HITBOX DISTANCE LUNGE ---
+                Vec3d diff = target.getPos().subtract(player.getPos()).multiply(1.0, 0, 1.0);
+                if (diff.lengthSquared() < 0.01) diff = player.getRotationVector().multiply(1.0, 0, 1.0);
+                Vec3d toTarget = diff.normalize();
+
+                double requiredDistance = (target.getWidth() / 2.0) + 0.5;
+                double idealX = target.getX() - toTarget.x * requiredDistance;
+                double idealZ = target.getZ() - toTarget.z * requiredDistance;
+
+                double dx = idealX - player.getX();
+                double dz = idealZ - player.getZ();
+
+                if (diff.length() > requiredDistance) {
+                    player.setVelocity(dx * 0.4, player.getVelocity().y, dz * 0.4);
+                } else {
+                    player.setVelocity(0, player.getVelocity().y, 0);
+                }
+
+                if (!player.getWorld().isClient) {
+
+                    double rotDx = player.getX() - target.getX();
+                    double rotDz = player.getZ() - target.getZ();
+                    float targetYaw = (float) Math.toDegrees(Math.atan2(rotDz, rotDx)) - 90.0f;
+
+                    target.setYaw(targetYaw);
+                    target.setHeadYaw(targetYaw);
+                    target.setBodyYaw(targetYaw);
+                    target.setPitch(0f);
+
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 10, 255, false, false, false));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 10, 255, false, false, false));
+
+                    // --- DATA-DRIVEN TIMELINE EXECUTION ---
+                    if (def.timeline != null) {
+                        for (FinisherDefinition.TimelineEvent event : def.timeline) {
+                            if (event.tick == this.riposte$finisherTick) {
+
+                                if ("sound".equals(event.action) && event.value != null) {
+                                    SoundEvent sound = Registries.SOUND_EVENT.get(new Identifier(event.value));
+                                    if (sound != null) {
+                                        player.getWorld().playSound(null, target.getBlockPos(), sound, SoundCategory.PLAYERS, 1.0f, 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.2f);
+                                    }
+                                }
+
+                                else if ("damage".equals(event.action)) {
+                                    float dmg = (event.value != null && event.value.equals("lethal")) ? Float.MAX_VALUE : event.amount;
+                                    target.damage(player.getDamageSources().playerAttack(player), dmg);
+                                    if (dmg == Float.MAX_VALUE) target.setHealth(0);
+                                }
+
+                                else if ("particle".equals(event.action) && event.value != null) {
+                                    DefaultParticleType pType = (DefaultParticleType) Registries.PARTICLE_TYPE.get(new Identifier(event.value));
+                                    if (pType != null && player.getWorld() instanceof ServerWorld sw) {
+                                        sw.spawnParticles(pType, target.getX() + event.x_offset, target.getY() + target.getHeight() * 0.5 + event.y_offset, target.getZ() + event.z_offset, event.count == 0 ? 10 : event.count, 0.2, 0.2, 0.2, 0.15);
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (!player.getWorld().isClient) this.cancelFinisher();
+            }
+
+            // End the finisher automatically when the JSON total duration is hit!
+            if (this.riposte$finisherTick >= def.total_duration_ticks) {
+                this.cancelFinisher();
+            }
+        }
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
@@ -131,6 +370,13 @@ public class PlayerEntityMixin implements ParryData {
         int currentWindow = this.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
         if (ticks > player.getFireTicks() && this.isParryActive(currentWindow)) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = "attack", at = @At("HEAD"), cancellable = true)
+    private void riposte$blockAttackDuringFinisher(Entity target, CallbackInfo ci) {
+        if (this.riposte$isExecutingFinisher) {
             ci.cancel();
         }
     }
@@ -196,6 +442,17 @@ public class PlayerEntityMixin implements ParryData {
 
                 player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
 
+                if (!player.getWorld().isClient && Riposte.CONFIG.addons.finishers.enableFinishers) {
+                    if (Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.NORMAL_PARRY || Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.BOTH) {
+                        FinisherData finisherData = (FinisherData) player;
+                        if (Riposte.CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
+                            finisherData.addFinisherGauge(projectile.getOwner() != null ? projectile.getOwner().getId() : -1, Riposte.CONFIG.addons.finishers.finisherFillOnParry);
+                        } else if (projectile.getOwner() != null) {
+                            finisherData.addParryCount(projectile.getOwner().getId());
+                        }
+                    }
+                }
+
                 if (!player.getWorld().isClient) {
                     double midX = player.getX() + (lookDir.x * 1.2);
                     double midY = player.getEyeY() + (lookDir.y * 1.2) - 0.2;
@@ -233,7 +490,9 @@ public class PlayerEntityMixin implements ParryData {
 
                 if (player instanceof ServerPlayerEntity serverPlayer) {
                     PacketByteBuf successBuf = PacketByteBufs.create();
-                    successBuf.writeBoolean(false); // isFallParry = false
+                    successBuf.writeBoolean(false);
+                    successBuf.writeInt(projectile.getOwner() != null ? projectile.getOwner().getId() : -1);
+                    successBuf.writeFloat(((FinisherData) player).getFinisherGauge(projectile.getOwner() != null ? projectile.getOwner().getId() : -1));
                     ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, successBuf);
                 }
             }
@@ -248,6 +507,26 @@ public class PlayerEntityMixin implements ParryData {
 
                 if (timeSinceParry <= Riposte.CONFIG.kickComboWindowMs) {
                     PlayerEntity player = (PlayerEntity) (Object) this;
+                    int victimId = livingTarget.getId();
+
+                    if (!player.getWorld().isClient && Riposte.CONFIG.addons.finishers.enableFinishers) {
+                        if (Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.KICK_COMBO || Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.BOTH) {
+                            FinisherData fData = (FinisherData) player;
+                            if (Riposte.CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
+                                fData.addFinisherGauge(victimId, Riposte.CONFIG.addons.finishers.finisherFillOnKickCombo);
+                            } else {
+                                fData.addParryCount(victimId);
+                            }
+
+                            if (player instanceof ServerPlayerEntity serverPlayer) {
+                                PacketByteBuf syncBuf = PacketByteBufs.create();
+                                syncBuf.writeInt(victimId);
+                                syncBuf.writeFloat(fData.getFinisherGauge(victimId));
+                                syncBuf.writeInt(fData.getParryCount(victimId));
+                                ServerPlayNetworking.send(serverPlayer, Riposte.SYNC_FINISHER_GAUGE_PACKET, syncBuf);
+                            }
+                        }
+                    }
 
                     double heavyKnockback = Riposte.CONFIG.parryKnockback * Riposte.CONFIG.kickComboKnockbackMultiplier;
 

@@ -50,5 +50,13 @@
     "sounds": [
       "riposte:parry_roll"
     ]
+  },
+  "finisher_fist": {
+    "category": "player",
+    "sounds": [
+      "riposte:finisher_fist1",
+      "riposte:finisher_fist2",
+      "riposte:finisher_fist3"
+    ]
   }
 }

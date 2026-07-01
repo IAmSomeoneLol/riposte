@@ -332,6 +332,54 @@
 							"lerp_mode": "catmullrom"
 						}
 					}
+				},
+				"head": {
+					"rotation": {
+						"0.1833": {
+							"pre": {
+								"vector": [0, 0, 0]
+							},
+							"post": {
+								"vector": [0, 0, 0]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"0.2833": {
+							"post": {
+								"vector": [-21.4563, -29.4851, 3.7282]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"0.4667": {
+							"post": {
+								"vector": [-20.1759, -32.2853, 0.4712]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"0.5833": {
+							"post": {
+								"vector": [-0.3779, -16.6094, 0.1578]
+							},
+							"lerp_mode": "catmullrom"
+						},
+						"0.7667": {
+							"post": {
+								"vector": [0, 0, 0]
+							},
+							"lerp_mode": "catmullrom"
+						}
+					},
+					"position": {
+						"0.0": {
+							"vector": [0, 0, 0]
+						},
+						"0.3667": {
+							"vector": [-0.5, 0, 0.4]
+						},
+						"0.7667": {
+							"vector": [0, 0, 0]
+						}
+					}
 				}
 			}
 		}

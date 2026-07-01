@@ -1,9 +1,11 @@
 package nel.riposte.mixin;
 
 import dev.emi.trinkets.api.TrinketsApi;
+import nel.riposte.FinisherData;
 import nel.riposte.HitstopData;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
+import nel.riposte.config.RiposteConfig;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
@@ -117,7 +119,63 @@ public abstract class LivingEntityMixin implements HitstopData {
     }
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
+    private void riposte$cancelDamageDuringFinisher(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity thisEntity = (LivingEntity) (Object) this;
+
+        // Player Execution Invincibility (AND Post-Finisher I-Frames)
+        if (thisEntity instanceof PlayerEntity player) {
+            if (player instanceof FinisherData finisherData) {
+                if (finisherData.isExecutingFinisher() || finisherData.getPostFinisherInvuln() > 0) {
+                    cir.setReturnValue(false);
+                    return;
+                }
+            }
+        }
+
+        // TARGET EXECUTION INVINCIBILITY
+        if (!thisEntity.getWorld().isClient && !Riposte.CONFIG.addons.finishers.enemyDamageFinisher) {
+            for (PlayerEntity p : thisEntity.getWorld().getPlayers()) {
+                FinisherData fData = (FinisherData) p;
+                if (fData.isExecutingFinisher() && fData.getFinisherTargetId() == thisEntity.getId()) {
+                    if (source.getAttacker() != p) {
+                        cir.setReturnValue(false);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
     private void riposte$onDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+
+        LivingEntity thisEntity = (LivingEntity) (Object) this;
+
+        // --- HOOK: DEFLECTED PROJECTILE HITS A MOB ---
+        if (!thisEntity.getWorld().isClient && Riposte.CONFIG.addons.finishers.enableFinishers && source.isIn(DamageTypeTags.IS_PROJECTILE)) {
+            if (source.getAttacker() instanceof PlayerEntity playerAttacker && source.getSource() != null) {
+                FinisherData fData = (FinisherData) playerAttacker;
+                if (fData.isProjectileDeflected(source.getSource().getId())) {
+                    int victimId = thisEntity.getId();
+
+                    if (Riposte.CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
+                        fData.addFinisherGauge(victimId, Riposte.CONFIG.addons.finishers.finisherFillOnParry);
+                    } else {
+                        fData.addParryCount(victimId);
+                    }
+
+                    if (playerAttacker instanceof ServerPlayerEntity serverPlayer) {
+                        PacketByteBuf syncBuf = PacketByteBufs.create();
+                        syncBuf.writeInt(victimId);
+                        syncBuf.writeFloat(fData.getFinisherGauge(victimId));
+                        syncBuf.writeInt(fData.getParryCount(victimId));
+                        ServerPlayNetworking.send(serverPlayer, Riposte.SYNC_FINISHER_GAUGE_PACKET, syncBuf);
+                    }
+                }
+            }
+        }
+
+        // --- NORMAL MELEE PARRY LOGIC ---
         if ((Object) this instanceof PlayerEntity player) {
             ParryData parryData = (ParryData) player;
 
@@ -149,13 +207,11 @@ public abstract class LivingEntityMixin implements HitstopData {
                 int iFrames = 10;
                 var component = TrinketsApi.getTrinketComponent(player).orElse(null);
 
-                // FALL DAMAGE PARRY EXECUTION
                 if (source.isOf(DamageTypes.FALL)) {
                     if (component != null && component.isEquipped(Riposte.LEATHER_SOCK)) {
                         parryData.setLeatherSockTicks(70);
                     }
 
-                    // NEW: Calculate the random pitch dynamically for the roll sound
                     float rollPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
                     player.getWorld().playSound(null, player.getBlockPos(), Riposte.PARRY_ROLL_SOUND, SoundCategory.PLAYERS, 1.0f, rollPitch);
 
@@ -214,6 +270,29 @@ public abstract class LivingEntityMixin implements HitstopData {
                 SoundEvent soundToPlay = isLethal ? Riposte.LETHAL_PARRY_SOUND : (isWeapon ? Riposte.WEAPON_PARRY_SOUND : Riposte.NORMAL_PARRY_SOUND);
 
                 player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
+
+                // --- ADD FINISHER GAUGE ON NORMAL PARRY ---
+                if (!player.getWorld().isClient && Riposte.CONFIG.addons.finishers.enableFinishers) {
+                    if (Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.NORMAL_PARRY || Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.BOTH) {
+                        FinisherData fData = (FinisherData) player;
+                        if (rawAttacker != null) {
+                            int victimId = rawAttacker.getId();
+                            if (Riposte.CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
+                                fData.addFinisherGauge(victimId, Riposte.CONFIG.addons.finishers.finisherFillOnParry);
+                            } else {
+                                fData.addParryCount(victimId);
+                            }
+
+                            if (player instanceof ServerPlayerEntity serverPlayer) {
+                                PacketByteBuf syncBuf = PacketByteBufs.create();
+                                syncBuf.writeInt(victimId);
+                                syncBuf.writeFloat(fData.getFinisherGauge(victimId));
+                                syncBuf.writeInt(fData.getParryCount(victimId));
+                                ServerPlayNetworking.send(serverPlayer, Riposte.SYNC_FINISHER_GAUGE_PACKET, syncBuf);
+                            }
+                        }
+                    }
+                }
 
                 if (!player.getWorld().isClient) {
                     Vec3d look = player.getRotationVector();

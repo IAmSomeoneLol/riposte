@@ -51,6 +51,7 @@
 
   "category.riposte.keys": "Riposte Mechanics",
   "key.riposte.parry": "Parry",
+  "key.riposte.finisher": "Execute Finisher",
 
   "config.riposte.main": "Server Settings",
   "config.riposte.client": "Client Settings",
@@ -72,6 +73,24 @@
   "riposte.main.accessoriesConfig": "Accessories Configurations",
   "riposte.main.ironPlateWindowBonusMs": "Iron Guard Window Bonus Ms",
   "riposte.main.wanderersCapeCooldownCharge": "Honorable Cape Cooldown Charge",
+
+  "riposte.main.addons": "Addons",
+  "riposte.main.addons.finishers": "Finishers",
+  "riposte.main.addons.finishers.enableFinishers": "Enable Finishers",
+  "riposte.main.addons.finishers.enemyDamageFinisher": "Allow Other Entities To Damage Finisher Victim",
+  "riposte.main.addons.finishers.finisherMode": "Finisher Mode",
+  "riposte.main.addons.finishers.finisherFillOn": "Finisher Fill On",
+  "riposte.main.addons.finishers.finisherFillOnParry": "Gauge Fill On Parry (%)",
+  "riposte.main.addons.finishers.finisherFillOnKickCombo": "Gauge Fill On Kick Combo (%)",
+  "riposte.main.addons.finishers.finisherGaugeConsumptionPerSecond": "Gauge Consumption Per Second (%)",
+  "riposte.main.addons.finishers.finisherParryCountMax": "Required Parries for Execution",
+  "riposte.main.addons.finishers.finisherTimeoutMs": "Finisher Timeout (ms)",
+  "riposte.main.addons.finishers.finisherWhitelistMobs": "Finisher Mobs Whitelist",
+
+  "riposte.client.addons": "Addons",
+  "riposte.client.addons.finishers": "Finishers",
+  "riposte.client.addons.finishers.contextualButtonPromptSize": "Contextual Button Prompt Size",
+  "riposte.client.addons.finishers.cameraLock": "Lock Camera During Finisher",
 
   "riposte.client.parryActivation": "Parry Activation",
   "riposte.client.iconCooldown": "Icon Cooldown",
@@ -102,5 +121,6 @@
   "riposte.client.flashScreen": "Flash Screen",
   "riposte.client.screenFlash": "Screen Flash",
   "riposte.client.screenFlashType": "Screen Flash Type",
-  "riposte.client.screenFlashDurationMs": "Screen Flash Duration Ms"
+  "riposte.client.screenFlashDurationMs": "Screen Flash Duration Ms",
+  "riposte.client.addons.finishers.cameraCenterPanningDurationMs": "Camera Center Panning Duration (ms)"
 }

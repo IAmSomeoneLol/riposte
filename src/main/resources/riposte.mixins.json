@@ -6,7 +6,8 @@
 	"mixins": [
 		"PlayerEntityMixin",
 		"LivingEntityMixin",
-		"PersistentProjectileEntityAccessor"
+		"PersistentProjectileEntityAccessor",
+		"EntityMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

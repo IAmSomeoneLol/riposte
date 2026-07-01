@@ -2,6 +2,7 @@ package nel.riposte.client.config;
 
 import me.fzzyhmstrs.fzzy_config.config.Config;
 import me.fzzyhmstrs.fzzy_config.config.ConfigGroup;
+import me.fzzyhmstrs.fzzy_config.config.ConfigSection;
 import nel.riposte.Riposte;
 import net.minecraft.util.Identifier;
 
@@ -25,7 +26,6 @@ public class RiposteClientConfig extends Config {
         WHITE,
         BLACK
     }
-
 
     public enum AnchorPoint {
         TOP_LEFT, TOP_CENTER, TOP_RIGHT,
@@ -77,4 +77,16 @@ public class RiposteClientConfig extends Config {
     public boolean particleNormal = true;
     @ConfigGroup.Pop
     public boolean particleHeavy = true;
+
+    public Addons addons = new Addons();
+
+    public static class Addons extends ConfigSection {
+        public Finishers finishers = new Finishers();
+    }
+
+    public static class Finishers extends ConfigSection {
+        public float contextualButtonPromptSize = 0.02f;
+        public boolean cameraLock = true; // NEW
+        public long cameraCenterPanningDurationMs = 300;
+    }
 }

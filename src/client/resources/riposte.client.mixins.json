@@ -9,7 +9,8 @@
 		"FovMixin",
 		"PlayerEntityModelMixin",
 		"HeldItemRendererMixin",
-		"AbstractClientPlayerEntityMixin"
+		"AbstractClientPlayerEntityMixin",
+		"MouseMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
