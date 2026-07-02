@@ -1,11 +1,16 @@
 package nel.riposte.client.mixin;
 
-import nel.riposte.FinisherData;
-import nel.riposte.ParryData;
+import dev.kosmx.playerAnim.api.TransformType;
+import dev.kosmx.playerAnim.core.util.Vec3f;
+import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
+import nel.riposte.*;
 import nel.riposte.client.RiposteClient;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.Camera;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.BlockView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -24,9 +29,16 @@ public abstract class CameraMixin {
     @Shadow private float pitch;
     @Shadow private float yaw;
 
-    // We will use these later to dynamically shake the screen based on the JSON
     @Unique private float riposte$finisherShake = 0.0f;
     @Unique private float riposte$finisherPitch = 0.0f;
+    @Unique private float riposte$finisherYaw = 0.0f;
+
+    @Unique private float riposte$finisherMoveX = 0.0f;
+    @Unique private float riposte$finisherMoveY = 0.0f;
+    @Unique private float riposte$finisherMoveZ = 0.0f;
+
+    @Unique private float riposte$smoothAnimPitch = 0.0f;
+    @Unique private float riposte$smoothAnimYaw = 0.0f;
 
     @Inject(method = "update", at = @At("TAIL"))
     private void riposte$applyEssenceOfParryCamera(BlockView area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta, CallbackInfo ci) {
@@ -43,7 +55,6 @@ public abstract class CameraMixin {
         float upMove = 0f;
         float rightMove = 0f;
 
-        // --- 1. EXISTING PARRY RECOIL & CAMERA SHAKE ---
         if (RiposteClient.CLIENT_CONFIG.cameraRecoil && timeSince < RiposteClient.CLIENT_CONFIG.recoilDurationMs) {
             float progress = (float) timeSince / RiposteClient.CLIENT_CONFIG.recoilDurationMs;
             float ease = (float) Math.pow(1.0 - progress, 3);
@@ -84,27 +95,75 @@ public abstract class CameraMixin {
             upMove -= 0.75f * ease;
         }
 
-        // --- 2. NEW: DATA-DRIVEN FINISHER CAMERA MODIFIERS ---
-        FinisherData fData = (FinisherData) client.player;
-        if (!thirdPerson && fData.isExecutingFinisher()) {
+        if (!thirdPerson && focusedEntity instanceof AbstractClientPlayerEntity player) {
+            FinisherData fData = (FinisherData) player;
+            if (fData.isExecutingFinisher()) {
 
-            // NOTE: We will inject the JSON timeline offsets into these variables in the next step!
-            // For now, this logic safely coexists alongside your Parry camera logic.
-            if (this.riposte$finisherShake > 0) {
-                finalYawOffset += (float) (Math.random() - 0.5) * this.riposte$finisherShake;
-                finalPitchOffset += (float) (Math.random() - 0.5) * this.riposte$finisherShake;
+                FinisherDefinition def = FinisherLoader.getFinisherById(fData.getActiveFinisherId());
 
-                this.riposte$finisherShake *= 0.8f; // Decays shake over time
+                // --- ONLY TRACK HEAD IF THE JSON ALLOWS IT ---
+                if (def != null && !def.disable_head_tracking) {
+                    var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
+                    if (animationContainer != null && animationContainer.isActive()) {
+                        Vec3f headRot = animationContainer.get3DTransform("head", TransformType.ROTATION, tickDelta, new Vec3f(0, 0, 0));
+
+                        float targetAnimPitch = (float) Math.toDegrees(headRot.getX());
+                        float targetAnimYaw = (float) Math.toDegrees(headRot.getY());
+
+                        this.riposte$smoothAnimPitch = MathHelper.lerpAngleDegrees(0.08f, this.riposte$smoothAnimPitch, targetAnimPitch);
+                        this.riposte$smoothAnimYaw = MathHelper.lerpAngleDegrees(0.08f, this.riposte$smoothAnimYaw, targetAnimYaw);
+
+                        finalPitchOffset += this.riposte$smoothAnimPitch;
+                        finalYawOffset -= this.riposte$smoothAnimYaw;
+                    }
+                }
+
+                if (def != null && def.timeline != null) {
+                    for (FinisherDefinition.TimelineEvent event : def.timeline) {
+                        if (event.tick == fData.getFinisherTick()) {
+                            if ("camera_shake".equals(event.action)) this.riposte$finisherShake += event.amount;
+                            if ("camera_pitch".equals(event.action)) this.riposte$finisherPitch += event.amount;
+                            if ("camera_yaw".equals(event.action)) this.riposte$finisherYaw += event.amount;
+                            if ("camera_move".equals(event.action)) {
+                                this.riposte$finisherMoveX += event.x_offset;
+                                this.riposte$finisherMoveY += event.y_offset;
+                                this.riposte$finisherMoveZ += event.z_offset;
+                            }
+                        }
+                    }
+                }
+
+                if (this.riposte$finisherShake > 0) {
+                    finalYawOffset += (float) (Math.random() - 0.5) * this.riposte$finisherShake;
+                    finalPitchOffset += (float) (Math.random() - 0.5) * this.riposte$finisherShake;
+                    this.riposte$finisherShake *= 0.8f;
+                }
+
+                finalPitchOffset += this.riposte$finisherPitch;
+                finalYawOffset += this.riposte$finisherYaw;
+                this.riposte$finisherPitch *= 0.9f;
+                this.riposte$finisherYaw *= 0.9f;
+
+                rightMove += this.riposte$finisherMoveX;
+                upMove += this.riposte$finisherMoveY;
+                forwardMove += this.riposte$finisherMoveZ;
+
+                this.riposte$finisherMoveX *= 0.85f;
+                this.riposte$finisherMoveY *= 0.85f;
+                this.riposte$finisherMoveZ *= 0.85f;
+
+            } else {
+                this.riposte$smoothAnimPitch = 0f;
+                this.riposte$smoothAnimYaw = 0f;
+                this.riposte$finisherShake = 0f;
+                this.riposte$finisherPitch = 0f;
+                this.riposte$finisherYaw = 0f;
+                this.riposte$finisherMoveX = 0f;
+                this.riposte$finisherMoveY = 0f;
+                this.riposte$finisherMoveZ = 0f;
             }
-
-            finalPitchOffset += this.riposte$finisherPitch;
-            this.riposte$finisherPitch *= 0.9f; // Decays pitch over time
-        } else {
-            this.riposte$finisherShake = 0f;
-            this.riposte$finisherPitch = 0f;
         }
 
-        // --- 3. APPLY ALL TRANSFORMATIONS ---
         this.moveBy(forwardMove, upMove, rightMove);
         this.setRotation(this.yaw + finalYawOffset, this.pitch + finalPitchOffset);
     }

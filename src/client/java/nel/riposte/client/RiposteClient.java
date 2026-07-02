@@ -94,6 +94,10 @@ public class RiposteClient implements ClientModInitializer {
 	public static float lockedPitch = 0;
 	public static boolean wasExecuting = false;
 
+	// --- NEW: Syncs the JSON Timeline Flash with the HUD Render! ---
+	public static long finisherFlashTimestamp = 0L;
+	private static int lastFlashTick = -1;
+
 	private static int renderTopPadding = 0;
 	private static int renderBottomPadding = 0;
 
@@ -146,7 +150,7 @@ public class RiposteClient implements ClientModInitializer {
 			@Override
 			public void reload(ResourceManager manager) {
 				try {
-					// ... Padding calculator logic
+					// Padding logic
 				} catch (Exception e) {
 					renderTopPadding = 0;
 					renderBottomPadding = 0;
@@ -237,7 +241,7 @@ public class RiposteClient implements ClientModInitializer {
 		ClientPlayNetworking.registerGlobalReceiver(Riposte.START_FINISHER_ANIM_PACKET, (client, handler, buf, responseSender) -> {
 			UUID playerUuid = buf.readUuid();
 			int targetId = buf.readInt();
-			String finisherId = buf.readString(); // NEW: Reads the JSON string!
+			String finisherId = buf.readString();
 
 			client.execute(() -> {
 				if (client.world != null) {
@@ -262,7 +266,7 @@ public class RiposteClient implements ClientModInitializer {
 						}
 
 						((FinisherData) clientPlayer).setActiveFinisherId(finisherId);
-						((FinisherData) clientPlayer).startFinisher(targetId);
+						((FinisherData) clientPlayer).startFinisher(targetId, finisherId);
 
 						playFirstPersonAnimation(clientPlayer, def.animation_id);
 					}
@@ -304,6 +308,25 @@ public class RiposteClient implements ClientModInitializer {
 			}
 
 			if (client.player != null) {
+
+				// --- NEW: CATCHES THE "FLASH" EVENT FROM THE JSON TIMELINE ---
+				FinisherData fData = (FinisherData) client.player;
+				if (fData.isExecutingFinisher()) {
+					FinisherDefinition def = FinisherLoader.getFinisherById(fData.getActiveFinisherId());
+					if (def != null && def.timeline != null) {
+						for (FinisherDefinition.TimelineEvent event : def.timeline) {
+							if (event.tick == fData.getFinisherTick() && "flash".equals(event.action)) {
+								if (lastFlashTick != fData.getFinisherTick()) {
+									finisherFlashTimestamp = System.currentTimeMillis();
+									lastFlashTick = fData.getFinisherTick();
+								}
+							}
+						}
+					}
+				} else {
+					lastFlashTick = -1;
+				}
+
 				ParryData data = (ParryData) client.player;
 				int currentWindow = data.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
@@ -449,7 +472,10 @@ public class RiposteClient implements ClientModInitializer {
 
 			long timeSinceSuccess = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
 			long timeSinceCombo = System.currentTimeMillis() - data.getSuccessfulComboTimestamp();
+			long timeSinceTimelineFlash = System.currentTimeMillis() - finisherFlashTimestamp; // NEW
+
 			long timeSinceFlash = Math.min(timeSinceSuccess, timeSinceCombo);
+			timeSinceFlash = Math.min(timeSinceFlash, timeSinceTimelineFlash); // MERGES THE FLASH EVENTS!
 
 			if (CLIENT_CONFIG.screenFlash && timeSinceFlash < CLIENT_CONFIG.screenFlashDurationMs && !lastParryWasFall) {
 				float alpha = 1.0f - ((float) timeSinceFlash / CLIENT_CONFIG.screenFlashDurationMs);

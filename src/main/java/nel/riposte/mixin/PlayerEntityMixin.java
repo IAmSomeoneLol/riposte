@@ -65,10 +65,8 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
     @Unique private int riposte$finisherTargetId = -1;
     @Unique private int riposte$finisherTick = 0;
 
-    // NEW: Data-Driven ID Tracker
     @Unique private String riposte$activeFinisherId = "";
 
-    // The 0.4s (8 ticks) Grace Period Tracker
     @Unique private int riposte$postFinisherInvulnTicks = 0;
 
     @Unique private Map<Integer, Float> riposte$gaugeMeters = new HashMap<>();
@@ -92,7 +90,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
     @Override public int getFinisherTargetId() { return this.riposte$finisherTargetId; }
     @Override public int getFinisherTick() { return this.riposte$finisherTick; }
 
-    // NEW Data-Driven Accessors
     @Override public String getActiveFinisherId() { return this.riposte$activeFinisherId; }
     @Override public void setActiveFinisherId(String id) { this.riposte$activeFinisherId = id; }
 
@@ -162,38 +159,28 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
     }
 
     @Override
-    public void startFinisher(int targetId) {
+    public void startFinisher(int targetId, String finisherId) {
         PlayerEntity player = (PlayerEntity) (Object) this;
-        Entity targetRaw = player.getWorld().getEntityById(targetId);
 
-        if (targetRaw instanceof LivingEntity target) {
-            ItemStack stack = player.getMainHandStack();
-            boolean hasWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
+        this.riposte$isExecutingFinisher = true;
+        this.riposte$finisherTargetId = targetId;
+        this.riposte$finisherTick = 0;
+        this.riposte$activeFinisherId = finisherId;
 
-            // --- DATA-DRIVEN CHECK: Query the JSON engine for a valid finisher! ---
-            FinisherDefinition def = FinisherLoader.getValidFinisher(target, hasWeapon);
-            if (def == null) return; // No matching JSON file found for this mob size!
-
-            this.riposte$isExecutingFinisher = true;
-            this.riposte$finisherTargetId = targetId;
-            this.riposte$finisherTick = 0;
-            this.riposte$activeFinisherId = def.id;
-
-            if (!player.getWorld().isClient) {
-                for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
-                    PacketByteBuf buf = PacketByteBufs.create();
-                    buf.writeUuid(player.getUuid());
-                    buf.writeInt(targetId);
-                    buf.writeString(def.id); // SYNC JSON ID TO CLIENT
-                    ServerPlayNetworking.send(tracker, Riposte.START_FINISHER_ANIM_PACKET, buf);
-                }
-                if (player instanceof ServerPlayerEntity serverPlayer) {
-                    PacketByteBuf buf = PacketByteBufs.create();
-                    buf.writeUuid(player.getUuid());
-                    buf.writeInt(targetId);
-                    buf.writeString(def.id); // SYNC JSON ID TO CLIENT
-                    ServerPlayNetworking.send(serverPlayer, Riposte.START_FINISHER_ANIM_PACKET, buf);
-                }
+        if (!player.getWorld().isClient) {
+            for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
+                PacketByteBuf buf = PacketByteBufs.create();
+                buf.writeUuid(player.getUuid());
+                buf.writeInt(targetId);
+                buf.writeString(finisherId);
+                ServerPlayNetworking.send(tracker, Riposte.START_FINISHER_ANIM_PACKET, buf);
+            }
+            if (player instanceof ServerPlayerEntity serverPlayer) {
+                PacketByteBuf buf = PacketByteBufs.create();
+                buf.writeUuid(player.getUuid());
+                buf.writeInt(targetId);
+                buf.writeString(finisherId);
+                ServerPlayNetworking.send(serverPlayer, Riposte.START_FINISHER_ANIM_PACKET, buf);
             }
         }
     }
@@ -272,7 +259,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
 
             if (targetRaw instanceof LivingEntity target && target.isAlive()) {
 
-                // --- DYNAMIC HITBOX DISTANCE LUNGE ---
                 Vec3d diff = target.getPos().subtract(player.getPos()).multiply(1.0, 0, 1.0);
                 if (diff.lengthSquared() < 0.01) diff = player.getRotationVector().multiply(1.0, 0, 1.0);
                 Vec3d toTarget = diff.normalize();
@@ -304,22 +290,44 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 10, 255, false, false, false));
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 10, 255, false, false, false));
 
-                    // --- DATA-DRIVEN TIMELINE EXECUTION ---
                     if (def.timeline != null) {
                         for (FinisherDefinition.TimelineEvent event : def.timeline) {
                             if (event.tick == this.riposte$finisherTick) {
 
-                                if ("sound".equals(event.action) && event.value != null) {
-                                    SoundEvent sound = Registries.SOUND_EVENT.get(new Identifier(event.value));
-                                    if (sound != null) {
-                                        player.getWorld().playSound(null, target.getBlockPos(), sound, SoundCategory.PLAYERS, 1.0f, 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.2f);
+                                if ("sound".equals(event.action)) {
+                                    String soundIdToPlay = null;
+
+                                    if (event.values != null && !event.values.isEmpty()) {
+                                        soundIdToPlay = event.values.get(player.getWorld().random.nextInt(event.values.size()));
+                                    } else if (event.value != null) {
+                                        soundIdToPlay = event.value;
+                                    }
+
+                                    if (soundIdToPlay != null) {
+                                        SoundEvent sound = Registries.SOUND_EVENT.get(new Identifier(soundIdToPlay));
+                                        if (sound != null) {
+                                            float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.5f;
+                                            player.getWorld().playSound(null, target.getBlockPos(), sound, SoundCategory.PLAYERS, 1.0f, randomPitch);
+                                        }
                                     }
                                 }
 
                                 else if ("damage".equals(event.action)) {
-                                    float dmg = (event.value != null && event.value.equals("lethal")) ? Float.MAX_VALUE : event.amount;
+                                    float dmg = 0f;
+
+                                    if (event.value != null && event.value.equals("lethal")) {
+                                        dmg = Float.MAX_VALUE;
+                                    } else if (event.value != null && event.value.equals("half_current")) {
+                                        dmg = Math.max(1.0f, target.getHealth() * 0.5f);
+                                    } else {
+                                        dmg = event.amount;
+                                    }
+
                                     target.damage(player.getDamageSources().playerAttack(player), dmg);
-                                    if (dmg == Float.MAX_VALUE) target.setHealth(0);
+
+                                    if (dmg == Float.MAX_VALUE) {
+                                        target.setHealth(0);
+                                    }
                                 }
 
                                 else if ("particle".equals(event.action) && event.value != null) {
@@ -328,7 +336,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                                         sw.spawnParticles(pType, target.getX() + event.x_offset, target.getY() + target.getHeight() * 0.5 + event.y_offset, target.getZ() + event.z_offset, event.count == 0 ? 10 : event.count, 0.2, 0.2, 0.2, 0.15);
                                     }
                                 }
-
                             }
                         }
                     }
@@ -337,7 +344,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                 if (!player.getWorld().isClient) this.cancelFinisher();
             }
 
-            // End the finisher automatically when the JSON total duration is hit!
             if (this.riposte$finisherTick >= def.total_duration_ticks) {
                 this.cancelFinisher();
             }

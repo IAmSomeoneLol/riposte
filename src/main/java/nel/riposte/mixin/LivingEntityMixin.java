@@ -64,11 +64,24 @@ public abstract class LivingEntityMixin implements HitstopData {
     }
 
     @Inject(method = "takeKnockback", at = @At("HEAD"), cancellable = true)
-    private void riposte$copperGuardKnockback(double strength, double x, double z, CallbackInfo ci) {
-        if ((Object) this instanceof PlayerEntity player) {
+    private void riposte$cancelKnockback(double strength, double x, double z, CallbackInfo ci) {
+        LivingEntity thisEntity = (LivingEntity) (Object) this;
+
+        if (thisEntity instanceof PlayerEntity player) {
             var component = TrinketsApi.getTrinketComponent(player).orElse(null);
             if (component != null && (component.isEquipped(Riposte.COPPER_GUARD) || component.isEquipped(Riposte.VOID_GUARD))) {
                 ci.cancel();
+                return;
+            }
+        }
+
+        if (!thisEntity.getWorld().isClient) {
+            for (PlayerEntity p : thisEntity.getWorld().getPlayers()) {
+                FinisherData fData = (FinisherData) p;
+                if (fData.isExecutingFinisher() && fData.getFinisherTargetId() == thisEntity.getId()) {
+                    ci.cancel();
+                    return;
+                }
             }
         }
     }
@@ -122,7 +135,6 @@ public abstract class LivingEntityMixin implements HitstopData {
     private void riposte$cancelDamageDuringFinisher(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity thisEntity = (LivingEntity) (Object) this;
 
-        // Player Execution Invincibility (AND Post-Finisher I-Frames)
         if (thisEntity instanceof PlayerEntity player) {
             if (player instanceof FinisherData finisherData) {
                 if (finisherData.isExecutingFinisher() || finisherData.getPostFinisherInvuln() > 0) {
@@ -132,7 +144,6 @@ public abstract class LivingEntityMixin implements HitstopData {
             }
         }
 
-        // TARGET EXECUTION INVINCIBILITY
         if (!thisEntity.getWorld().isClient && !Riposte.CONFIG.addons.finishers.enemyDamageFinisher) {
             for (PlayerEntity p : thisEntity.getWorld().getPlayers()) {
                 FinisherData fData = (FinisherData) p;
@@ -148,10 +159,8 @@ public abstract class LivingEntityMixin implements HitstopData {
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
     private void riposte$onDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-
         LivingEntity thisEntity = (LivingEntity) (Object) this;
 
-        // --- HOOK: DEFLECTED PROJECTILE HITS A MOB ---
         if (!thisEntity.getWorld().isClient && Riposte.CONFIG.addons.finishers.enableFinishers && source.isIn(DamageTypeTags.IS_PROJECTILE)) {
             if (source.getAttacker() instanceof PlayerEntity playerAttacker && source.getSource() != null) {
                 FinisherData fData = (FinisherData) playerAttacker;
@@ -175,7 +184,6 @@ public abstract class LivingEntityMixin implements HitstopData {
             }
         }
 
-        // --- NORMAL MELEE PARRY LOGIC ---
         if ((Object) this instanceof PlayerEntity player) {
             ParryData parryData = (ParryData) player;
 
@@ -271,7 +279,6 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                 player.getWorld().playSound(null, player.getBlockPos(), soundToPlay, SoundCategory.PLAYERS, 1.0f, randomPitch);
 
-                // --- ADD FINISHER GAUGE ON NORMAL PARRY ---
                 if (!player.getWorld().isClient && Riposte.CONFIG.addons.finishers.enableFinishers) {
                     if (Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.NORMAL_PARRY || Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.BOTH) {
                         FinisherData fData = (FinisherData) player;

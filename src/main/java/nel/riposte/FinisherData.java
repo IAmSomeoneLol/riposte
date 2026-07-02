@@ -4,10 +4,10 @@ public interface FinisherData {
     boolean isExecutingFinisher();
     int getFinisherTargetId();
     int getFinisherTick();
-    String getActiveFinisherId(); // NEW
-    void setActiveFinisherId(String id); // NEW
+    String getActiveFinisherId();
+    void setActiveFinisherId(String id);
 
-    void startFinisher(int targetId);
+    void startFinisher(int targetId, String finisherId);
     void cancelFinisher();
 
     int getPostFinisherInvuln();

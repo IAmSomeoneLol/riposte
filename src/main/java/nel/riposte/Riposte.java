@@ -7,7 +7,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper; // NEW
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.ItemStack;
@@ -23,7 +23,7 @@ import net.minecraft.registry.Registries;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.registry.Registry;
-import net.minecraft.resource.ResourceType; // NEW
+import net.minecraft.resource.ResourceType;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
@@ -102,7 +102,6 @@ public class Riposte implements ModInitializer {
 	public void onInitialize() {
 		CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteConfig::new);
 
-		// --- NEW: Registers your JSON Finisher engine with the server! ---
 		ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new FinisherLoader());
 
 		Registry.register(Registries.PARTICLE_TYPE, new Identifier(MOD_ID, "parry_trail"), PARRY_TRAIL);
@@ -163,6 +162,15 @@ public class Riposte implements ModInitializer {
 				if (CONFIG.addons.finishers.enableFinishers && player instanceof FinisherData finisherData) {
 					if (finisherData.isExecutingFinisher()) return;
 
+					net.minecraft.entity.Entity targetRaw = player.getWorld().getEntityById(targetId);
+					if (!(targetRaw instanceof net.minecraft.entity.LivingEntity target)) return;
+
+					ItemStack stack = player.getMainHandStack();
+					boolean hasWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
+
+					FinisherDefinition def = FinisherLoader.getValidFinisher(target, hasWeapon);
+					if (def == null) return;
+
 					boolean canExecute = false;
 
 					if (CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
@@ -178,7 +186,7 @@ public class Riposte implements ModInitializer {
 					}
 
 					if (canExecute) {
-						finisherData.startFinisher(targetId);
+						finisherData.startFinisher(targetId, def.id);
 					}
 				}
 			});
