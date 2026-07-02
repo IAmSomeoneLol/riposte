@@ -18,7 +18,8 @@ import java.util.Random;
 
 public class FinisherLoader extends SinglePreparationResourceReloader<List<FinisherDefinition>> implements IdentifiableResourceReloadListener {
 
-    private static final Gson GSON = new GsonBuilder().create();
+    // --- ENABLED LENIENT PARSING: This allows you to use standard // comments in your JSON files! ---
+    private static final Gson GSON = new GsonBuilder().setLenient().create();
     private static final List<FinisherDefinition> REGISTRY = new ArrayList<>();
     private static final Random RANDOM = new Random();
 

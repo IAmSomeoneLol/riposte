@@ -61,8 +61,14 @@ public class Riposte implements ModInitializer {
 	public static final Identifier PARRY_ROLL_ID = new Identifier(MOD_ID, "parry_roll");
 	public static final SoundEvent PARRY_ROLL_SOUND = SoundEvent.of(PARRY_ROLL_ID);
 
-	public static final Identifier FINISHER_FIST_ID = new Identifier(MOD_ID, "finisher_fist");
-	public static final SoundEvent FINISHER_FIST_SOUND = SoundEvent.of(FINISHER_FIST_ID);
+	public static final Identifier FINISHER_FIST1_ID = new Identifier(MOD_ID, "finisher_fist1");
+	public static final SoundEvent FINISHER_FIST1_SOUND = SoundEvent.of(FINISHER_FIST1_ID);
+
+	public static final Identifier FINISHER_FIST2_ID = new Identifier(MOD_ID, "finisher_fist2");
+	public static final SoundEvent FINISHER_FIST2_SOUND = SoundEvent.of(FINISHER_FIST2_ID);
+
+	public static final Identifier FINISHER_FIST3_ID = new Identifier(MOD_ID, "finisher_fist3");
+	public static final SoundEvent FINISHER_FIST3_SOUND = SoundEvent.of(FINISHER_FIST3_ID);
 
 	public static final Item IRON_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "parry", null,
 			"tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3", "tooltip.riposte.modifier.knockback_1_3", "tooltip.riposte.modifier.invuln_time_0_5");
@@ -114,7 +120,10 @@ public class Riposte implements ModInitializer {
 		Registry.register(Registries.SOUND_EVENT, PARRY_FIST_READY_ID, PARRY_FIST_READY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, PARRY_WEAPON_READY_ID, PARRY_WEAPON_READY_SOUND);
 		Registry.register(Registries.SOUND_EVENT, PARRY_ROLL_ID, PARRY_ROLL_SOUND);
-		Registry.register(Registries.SOUND_EVENT, FINISHER_FIST_ID, FINISHER_FIST_SOUND);
+
+		Registry.register(Registries.SOUND_EVENT, FINISHER_FIST1_ID, FINISHER_FIST1_SOUND);
+		Registry.register(Registries.SOUND_EVENT, FINISHER_FIST2_ID, FINISHER_FIST2_SOUND);
+		Registry.register(Registries.SOUND_EVENT, FINISHER_FIST3_ID, FINISHER_FIST3_SOUND);
 
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "iron_guard"), IRON_GUARD);
 		Registry.register(Registries.ITEM, new Identifier(MOD_ID, "leather_sock"), LEATHER_SOCK);

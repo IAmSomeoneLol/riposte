@@ -43,6 +43,7 @@ import net.minecraft.particle.DefaultParticleType;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -94,9 +95,10 @@ public class RiposteClient implements ClientModInitializer {
 	public static float lockedPitch = 0;
 	public static boolean wasExecuting = false;
 
-	// --- NEW: Syncs the JSON Timeline Flash with the HUD Render! ---
 	public static long finisherFlashTimestamp = 0L;
+	public static long finisherRecoilTimestamp = 0L;
 	private static int lastFlashTick = -1;
+	private static int lastRecoilTick = -1;
 
 	private static int renderTopPadding = 0;
 	private static int renderBottomPadding = 0;
@@ -107,8 +109,10 @@ public class RiposteClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new, RegisterType.CLIENT);
 
-		ParticleFactoryRegistry.getInstance().register(Riposte.PARRY_TRAIL, provider -> new ParryTrailParticle.HeavyFactory(provider));
-		ParticleFactoryRegistry.getInstance().register(Riposte.PARRY_TRAIL_LIGHT, provider -> new ParryTrailParticle.LightFactory(provider));
+		@SuppressWarnings("unchecked")
+		var p1 = ParticleFactoryRegistry.getInstance();
+		p1.register(Riposte.PARRY_TRAIL, provider -> new ParryTrailParticle.HeavyFactory(provider));
+		p1.register(Riposte.PARRY_TRAIL_LIGHT, provider -> new ParryTrailParticle.LightFactory(provider));
 
 		parryKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.riposte.parry",
@@ -146,11 +150,9 @@ public class RiposteClient implements ClientModInitializer {
 			public Identifier getFabricId() {
 				return new Identifier(Riposte.MOD_ID, "icon_padding_calculator");
 			}
-
 			@Override
 			public void reload(ResourceManager manager) {
 				try {
-					// Padding logic
 				} catch (Exception e) {
 					renderTopPadding = 0;
 					renderBottomPadding = 0;
@@ -308,23 +310,30 @@ public class RiposteClient implements ClientModInitializer {
 			}
 
 			if (client.player != null) {
-
-				// --- NEW: CATCHES THE "FLASH" EVENT FROM THE JSON TIMELINE ---
 				FinisherData fData = (FinisherData) client.player;
 				if (fData.isExecutingFinisher()) {
 					FinisherDefinition def = FinisherLoader.getFinisherById(fData.getActiveFinisherId());
 					if (def != null && def.timeline != null) {
+						boolean foundFlash = false;
+						boolean foundRecoil = false;
 						for (FinisherDefinition.TimelineEvent event : def.timeline) {
-							if (event.tick == fData.getFinisherTick() && "flash".equals(event.action)) {
-								if (lastFlashTick != fData.getFinisherTick()) {
-									finisherFlashTimestamp = System.currentTimeMillis();
-									lastFlashTick = fData.getFinisherTick();
-								}
+							if (event.tick == fData.getFinisherTick()) {
+								if ("flash".equals(event.action)) foundFlash = true;
+								if ("camera_recoil".equals(event.action)) foundRecoil = true;
 							}
+						}
+						if (foundFlash && lastFlashTick != fData.getFinisherTick()) {
+							finisherFlashTimestamp = System.currentTimeMillis();
+							lastFlashTick = fData.getFinisherTick();
+						}
+						if (foundRecoil && lastRecoilTick != fData.getFinisherTick()) {
+							finisherRecoilTimestamp = System.currentTimeMillis();
+							lastRecoilTick = fData.getFinisherTick();
 						}
 					}
 				} else {
 					lastFlashTick = -1;
+					lastRecoilTick = -1;
 				}
 
 				ParryData data = (ParryData) client.player;
@@ -333,6 +342,7 @@ public class RiposteClient implements ClientModInitializer {
 				if (!data.isParryActive(currentWindow)) {
 					if (currentParryAnimation.equals("parry_fist_ready") || currentParryAnimation.equals("parry_weapon_ready")) {
 						if (client.options.attackKey.isPressed() || client.options.useKey.isPressed()) {
+							@SuppressWarnings("unchecked")
 							var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
 							if (animationContainer != null) {
 								animationContainer.setAnimation(null);
@@ -472,10 +482,10 @@ public class RiposteClient implements ClientModInitializer {
 
 			long timeSinceSuccess = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
 			long timeSinceCombo = System.currentTimeMillis() - data.getSuccessfulComboTimestamp();
-			long timeSinceTimelineFlash = System.currentTimeMillis() - finisherFlashTimestamp; // NEW
+			long timeSinceTimelineFlash = System.currentTimeMillis() - finisherFlashTimestamp;
 
 			long timeSinceFlash = Math.min(timeSinceSuccess, timeSinceCombo);
-			timeSinceFlash = Math.min(timeSinceFlash, timeSinceTimelineFlash); // MERGES THE FLASH EVENTS!
+			timeSinceFlash = Math.min(timeSinceFlash, timeSinceTimelineFlash);
 
 			if (CLIENT_CONFIG.screenFlash && timeSinceFlash < CLIENT_CONFIG.screenFlashDurationMs && !lastParryWasFall) {
 				float alpha = 1.0f - ((float) timeSinceFlash / CLIENT_CONFIG.screenFlashDurationMs);

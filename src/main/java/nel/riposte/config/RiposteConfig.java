@@ -56,7 +56,7 @@ public class RiposteConfig extends Config {
 
     public static class Finishers extends ConfigSection {
         public boolean enableFinishers = true;
-        public boolean enemyDamageFinisher = false; // NEW
+        public boolean enemyDamageFinisher = false;
 
         public FinisherMode finisherMode = FinisherMode.GAUGE_METER;
         public FinisherTrigger finisherFillOn = FinisherTrigger.BOTH;
@@ -67,6 +67,11 @@ public class RiposteConfig extends Config {
 
         public int finisherParryCountMax = 5;
         public int finisherTimeoutMs = 6000;
+
+        // --- NEW: Finisher Reward Configs ---
+        public boolean finisherRewardEnabled = true;
+        public float finisherHealthReturnPercent = 10.0f;
+        public float finisherFoodReturnPercent = 10.0f;
 
         public List<String> finisherWhitelistMobs = List.of(
                 "minecraft:zombie",

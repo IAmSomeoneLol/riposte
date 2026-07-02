@@ -46,7 +46,11 @@ public abstract class CameraMixin {
         if (client.player == null) return;
 
         ParryData data = (ParryData) client.player;
-        long timeSince = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
+        long timeSinceParry = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
+
+        // --- NEW: MERGED RECOIL ---
+        long timeSinceFinisherRecoil = System.currentTimeMillis() - RiposteClient.finisherRecoilTimestamp;
+        long timeSince = Math.min(timeSinceParry, timeSinceFinisherRecoil);
 
         float finalPitchOffset = 0f;
         float finalYawOffset = 0f;
@@ -59,10 +63,10 @@ public abstract class CameraMixin {
             float progress = (float) timeSince / RiposteClient.CLIENT_CONFIG.recoilDurationMs;
             float ease = (float) Math.pow(1.0 - progress, 3);
 
-            if (RiposteClient.lastParryWasFall) {
+            if (RiposteClient.lastParryWasFall && timeSince == timeSinceParry) {
                 finalPitchOffset += RiposteClient.CLIENT_CONFIG.recoilIntensity * ease;
             } else {
-                Random rand = new Random(data.getSuccessfulParryTimestamp());
+                Random rand = new Random(timeSince == timeSinceParry ? data.getSuccessfulParryTimestamp() : RiposteClient.finisherRecoilTimestamp);
                 double angle = rand.nextDouble() * Math.PI * 2.0;
 
                 float yawDir = (float) Math.cos(angle);
@@ -89,7 +93,7 @@ public abstract class CameraMixin {
             forwardMove = -RiposteClient.CLIENT_CONFIG.cameraPushback * fade;
         }
 
-        if (RiposteClient.CLIENT_CONFIG.parryFallCameraFlow && RiposteClient.lastParryWasFall && timeSince < 1000) {
+        if (RiposteClient.CLIENT_CONFIG.parryFallCameraFlow && RiposteClient.lastParryWasFall && timeSince == timeSinceParry && timeSince < 1000) {
             float progress = (float) timeSince / 1000f;
             float ease = (float) Math.pow(1.0 - progress, 3);
             upMove -= 0.75f * ease;
@@ -101,7 +105,6 @@ public abstract class CameraMixin {
 
                 FinisherDefinition def = FinisherLoader.getFinisherById(fData.getActiveFinisherId());
 
-                // --- ONLY TRACK HEAD IF THE JSON ALLOWS IT ---
                 if (def != null && !def.disable_head_tracking) {
                     var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
                     if (animationContainer != null && animationContainer.isActive()) {

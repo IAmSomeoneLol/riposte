@@ -281,20 +281,20 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                 if (!player.getWorld().isClient && Riposte.CONFIG.addons.finishers.enableFinishers) {
                     if (Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.NORMAL_PARRY || Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.BOTH) {
-                        FinisherData fData = (FinisherData) player;
+                        FinisherData finisherData = (FinisherData) player;
                         if (rawAttacker != null) {
                             int victimId = rawAttacker.getId();
                             if (Riposte.CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
-                                fData.addFinisherGauge(victimId, Riposte.CONFIG.addons.finishers.finisherFillOnParry);
+                                finisherData.addFinisherGauge(victimId, Riposte.CONFIG.addons.finishers.finisherFillOnParry);
                             } else {
-                                fData.addParryCount(victimId);
+                                finisherData.addParryCount(victimId);
                             }
 
                             if (player instanceof ServerPlayerEntity serverPlayer) {
                                 PacketByteBuf syncBuf = PacketByteBufs.create();
                                 syncBuf.writeInt(victimId);
-                                syncBuf.writeFloat(fData.getFinisherGauge(victimId));
-                                syncBuf.writeInt(fData.getParryCount(victimId));
+                                syncBuf.writeFloat(finisherData.getFinisherGauge(victimId));
+                                syncBuf.writeInt(finisherData.getParryCount(victimId));
                                 ServerPlayNetworking.send(serverPlayer, Riposte.SYNC_FINISHER_GAUGE_PACKET, syncBuf);
                             }
                         }

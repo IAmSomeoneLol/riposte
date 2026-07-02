@@ -257,7 +257,8 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
 
             Entity targetRaw = player.getWorld().getEntityById(this.riposte$finisherTargetId);
 
-            if (targetRaw instanceof LivingEntity target && target.isAlive()) {
+            // --- FIX 1: Allows animation to fully complete over dying corpses! ---
+            if (targetRaw instanceof LivingEntity target && !target.isRemoved()) {
 
                 Vec3d diff = target.getPos().subtract(player.getPos()).multiply(1.0, 0, 1.0);
                 if (diff.lengthSquared() < 0.01) diff = player.getRotationVector().multiply(1.0, 0, 1.0);
@@ -285,7 +286,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                     target.setYaw(targetYaw);
                     target.setHeadYaw(targetYaw);
                     target.setBodyYaw(targetYaw);
-                    target.setPitch(0f);
 
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 10, 255, false, false, false));
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 10, 255, false, false, false));
@@ -295,28 +295,29 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                             if (event.tick == this.riposte$finisherTick) {
 
                                 if ("sound".equals(event.action)) {
-                                    String soundIdToPlay = null;
-
+                                    String targetSound = null;
                                     if (event.values != null && !event.values.isEmpty()) {
-                                        soundIdToPlay = event.values.get(player.getWorld().random.nextInt(event.values.size()));
+                                        targetSound = event.values.get(player.getWorld().random.nextInt(event.values.size()));
                                     } else if (event.value != null) {
-                                        soundIdToPlay = event.value;
+                                        targetSound = event.value;
                                     }
 
-                                    if (soundIdToPlay != null) {
-                                        SoundEvent sound = Registries.SOUND_EVENT.get(new Identifier(soundIdToPlay));
+                                    if (targetSound != null) {
+                                        SoundEvent sound = Registries.SOUND_EVENT.get(new Identifier(targetSound));
                                         if (sound != null) {
-                                            float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.5f;
-                                            player.getWorld().playSound(null, target.getBlockPos(), sound, SoundCategory.PLAYERS, 1.0f, randomPitch);
+                                            float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.4f;
+                                            player.getWorld().playSound(null, target.getX(), target.getY(), target.getZ(), sound, SoundCategory.PLAYERS, 1.0f, randomPitch);
                                         }
                                     }
                                 }
 
                                 else if ("damage".equals(event.action)) {
                                     float dmg = 0f;
+                                    boolean isLethal = false;
 
                                     if (event.value != null && event.value.equals("lethal")) {
                                         dmg = Float.MAX_VALUE;
+                                        isLethal = true;
                                     } else if (event.value != null && event.value.equals("half_current")) {
                                         dmg = Math.max(1.0f, target.getHealth() * 0.5f);
                                     } else {
@@ -325,8 +326,41 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
 
                                     target.damage(player.getDamageSources().playerAttack(player), dmg);
 
-                                    if (dmg == Float.MAX_VALUE) {
+                                    if (isLethal) {
                                         target.setHealth(0);
+
+                                        // --- FIX 2: Player receives reward EXACTLY when the lethal blow connects! ---
+                                        if (Riposte.CONFIG.addons.finishers.finisherRewardEnabled) {
+                                            float hpPercent = Riposte.CONFIG.addons.finishers.finisherHealthReturnPercent / 100.0f;
+                                            player.heal(player.getMaxHealth() * hpPercent);
+
+                                            float foodPercent = Riposte.CONFIG.addons.finishers.finisherFoodReturnPercent / 100.0f;
+                                            int foodReward = Math.round(20.0f * foodPercent);
+                                            float satReward = 20.0f * foodPercent;
+
+                                            net.minecraft.entity.player.HungerManager hunger = player.getHungerManager();
+                                            if (hunger.getFoodLevel() < 20) {
+                                                hunger.setFoodLevel(Math.min(20, hunger.getFoodLevel() + foodReward));
+                                            } else {
+                                                hunger.setSaturationLevel(Math.min(20.0f, hunger.getSaturationLevel() + satReward));
+                                            }
+                                        }
+                                    }
+                                }
+
+                                else if ("entity_pitch".equals(event.action)) {
+                                    target.setPitch(event.amount);
+                                    target.setHeadYaw(target.getYaw());
+                                }
+
+                                else if ("blood".equals(event.action)) {
+                                    if (player.getWorld() instanceof ServerWorld sw) {
+                                        sw.spawnParticles(new BlockStateParticleEffect(ParticleTypes.BLOCK, Blocks.REDSTONE_BLOCK.getDefaultState()),
+                                                target.getX() + event.x_offset,
+                                                target.getY() + target.getHeight() * 0.5 + event.y_offset,
+                                                target.getZ() + event.z_offset,
+                                                event.count == 0 ? 25 : event.count,
+                                                0.2, 0.2, 0.2, 0.15);
                                     }
                                 }
 

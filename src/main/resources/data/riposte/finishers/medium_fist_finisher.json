@@ -5,16 +5,25 @@
   "requires_grounded": false,
   "weapon_requirement": "FIST",
   "total_duration_ticks": 34,
-  "disable_head_tracking": true,
+  "disable_head_tracking": false,
   "timeline": [
-    { "tick": 2, "action": "sound", "value": "minecraft:entity.player.attack.sweep" },
+    { "tick": 4, "action": "sound", "value": "minecraft:entity.player.attack.sweep" },
+    { "tick": 4, "action": "camera_recoil" },
+
     { "tick": 11, "action": "sound", "values": ["riposte:finisher_fist1", "riposte:finisher_fist2"] },
-    { "tick": 11, "action": "camera_shake", "amount": 2.0 },
+    { "tick": 11, "action": "camera_shake", "amount": 4.0 },
+    { "tick": 11, "action": "camera_recoil" },
+    { "tick": 11, "action": "flash" },
+    { "tick": 11, "action": "entity_pitch", "amount": -30.0 },
+    { "tick": 11, "action": "blood", "count": 25, "y_offset": 0.5 },
     { "tick": 11, "action": "damage", "value": "half_current" },
+
     { "tick": 24, "action": "sound", "value": "riposte:finisher_fist3" },
-    { "tick": 24, "action": "flash" },
     { "tick": 24, "action": "camera_shake", "amount": 8.0 },
-    { "tick": 24, "action": "camera_pitch", "amount": -10.0 },
+    { "tick": 24, "action": "camera_recoil" },
+    { "tick": 24, "action": "flash" },
+    { "tick": 24, "action": "entity_pitch", "amount": -60.0 },
+    { "tick": 24, "action": "blood", "count": 40, "y_offset": 0.5 },
     { "tick": 24, "action": "camera_move", "z_offset": -1.5 },
     { "tick": 24, "action": "damage", "value": "lethal" }
   ]
