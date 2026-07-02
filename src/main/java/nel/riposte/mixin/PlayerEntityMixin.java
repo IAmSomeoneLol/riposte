@@ -112,10 +112,8 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
         float before = getFinisherGauge(targetId);
         float after = Math.min(300f, before + amount);
         this.riposte$gaugeMeters.put(targetId, after);
-
-        if (before < 100f && after >= 100f) {
-            this.setGaugeReadyTimestamp(targetId, System.currentTimeMillis());
-        }
+        // NOTE: the "ready" timestamp is no longer set here. It's now set in riposte$processFinisherSequence,
+        // only once the target ALSO satisfies the health threshold - see that method for why.
     }
 
     @Override
@@ -129,11 +127,8 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
 
     @Override
     public void setFinisherGauge(int targetId, float amount) {
-        float before = getFinisherGauge(targetId);
         this.riposte$gaugeMeters.put(targetId, amount);
-        if (before < 100f && amount >= 100f) {
-            this.setGaugeReadyTimestamp(targetId, System.currentTimeMillis());
-        } else if (amount < 100f) {
+        if (amount < 100f) {
             this.riposte$gaugeReadyTimestamps.remove(targetId);
         }
     }
@@ -142,18 +137,13 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
     public void addParryCount(int targetId) {
         int current = getParryCount(targetId);
         this.riposte$parryCounts.put(targetId, current + 1);
-
-        if (current + 1 == Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
-            this.setParryReadyTimestamp(targetId, System.currentTimeMillis());
-        }
+        // NOTE: same as addFinisherGauge above - ready timestamp now starts in riposte$processFinisherSequence.
     }
 
     @Override
     public void setParryCount(int targetId, int amount) {
         this.riposte$parryCounts.put(targetId, amount);
-        if (amount >= Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
-            this.setParryReadyTimestamp(targetId, System.currentTimeMillis());
-        } else {
+        if (amount < Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
             this.riposte$parryReadyTimestamps.remove(targetId);
         }
     }
@@ -222,12 +212,30 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
         if (Riposte.CONFIG.addons.finishers.enableFinishers && player.age % 20 == 0) {
             if (Riposte.CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
                 this.riposte$gaugeMeters.keySet().removeIf(id -> {
+                    net.minecraft.entity.Entity targetRaw = player.getWorld().getEntityById(id);
+                    if (!(targetRaw instanceof LivingEntity target) || target.isRemoved()) {
+                        this.riposte$gaugeReadyTimestamps.remove(id);
+                        return true;
+                    }
+
                     float current = this.riposte$gaugeMeters.getOrDefault(id, 0f);
                     if (current >= 100f) {
+                        float healthPercent = target.getMaxHealth() > 0 ? (target.getHealth() / target.getMaxHealth()) * 100f : 0f;
+                        boolean healthEligible = Riposte.CONFIG.addons.finishers.isHealthEligible(healthPercent);
                         long readyTime = this.getGaugeReadyTimestamp(id);
-                        if (readyTime > 0 && (now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs)) {
+
+                        if (healthEligible) {
+                            // Prompt just became visible right now - start the timeout timer from this tick.
+                            if (readyTime <= 0) {
+                                this.setGaugeReadyTimestamp(id, now);
+                            } else if (now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs) {
+                                this.riposte$gaugeReadyTimestamps.remove(id);
+                                return true;
+                            }
+                        } else if (readyTime > 0) {
+                            // Target healed back above the threshold - hide the prompt and reset the timer
+                            // so it starts fresh (rather than expiring silently) once it drops low again.
                             this.riposte$gaugeReadyTimestamps.remove(id);
-                            return true;
                         }
                     } else if (current > 0) {
                         this.riposte$gaugeMeters.put(id, Math.max(0f, current - Riposte.CONFIG.addons.finishers.finisherGaugeConsumptionPerSecond));
@@ -237,9 +245,26 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
             } else {
                 this.riposte$parryCounts.entrySet().removeIf(entry -> {
                     int targetId = entry.getKey();
+                    net.minecraft.entity.Entity targetRaw = player.getWorld().getEntityById(targetId);
+                    if (!(targetRaw instanceof LivingEntity target) || target.isRemoved()) {
+                        this.riposte$parryReadyTimestamps.remove(targetId);
+                        return true;
+                    }
+
                     if (entry.getValue() >= Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
+                        float healthPercent = target.getMaxHealth() > 0 ? (target.getHealth() / target.getMaxHealth()) * 100f : 0f;
+                        boolean healthEligible = Riposte.CONFIG.addons.finishers.isHealthEligible(healthPercent);
                         long readyTime = this.getParryReadyTimestamp(targetId);
-                        return readyTime > 0 && (now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs);
+
+                        if (healthEligible) {
+                            if (readyTime <= 0) {
+                                this.setParryReadyTimestamp(targetId, now);
+                                return false;
+                            }
+                            return now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs;
+                        } else if (readyTime > 0) {
+                            this.riposte$parryReadyTimestamps.remove(targetId);
+                        }
                     }
                     return false;
                 });
@@ -476,6 +501,10 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                 boolean isWeapon = item instanceof SwordItem || item instanceof MiningToolItem || item instanceof TridentItem;
 
                 boolean isHeavyDamage = speed > 2.0;
+
+                // TEMP DEBUG - remove once the heavy-particle-on-fist bug is confirmed/fixed
+                Riposte.LOGGER.info("[Riposte DEBUG] Projectile deflect VFX -> player={}, mainHandItem={}, isWeapon={}, speed={}, isHeavyDamage={}",
+                        player.getName().getString(), item, isWeapon, speed, isHeavyDamage);
 
                 float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
                 SoundEvent soundToPlay = isWeapon ? Riposte.WEAPON_PARRY_SOUND : Riposte.NORMAL_PARRY_SOUND;

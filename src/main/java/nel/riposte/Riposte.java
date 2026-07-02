@@ -174,6 +174,9 @@ public class Riposte implements ModInitializer {
 					net.minecraft.entity.Entity targetRaw = player.getWorld().getEntityById(targetId);
 					if (!(targetRaw instanceof net.minecraft.entity.LivingEntity target)) return;
 
+					String targetEntityId = net.minecraft.registry.Registries.ENTITY_TYPE.getId(target.getType()).toString();
+					if (!CONFIG.addons.finishers.isFinisherAllowedFor(targetEntityId)) return;
+
 					ItemStack stack = player.getMainHandStack();
 					boolean hasWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
 

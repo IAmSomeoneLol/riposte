@@ -164,6 +164,7 @@ public class RiposteClient implements ClientModInitializer {
 			double px = buf.readDouble();
 			double py = buf.readDouble();
 			double pz = buf.readDouble();
+			float yaw = buf.readFloat(); // FIX: server writes this float before the booleans - must be consumed to stay in sync
 			boolean isWeapon = buf.readBoolean();
 			boolean isHeavyDamage = buf.readBoolean();
 
@@ -377,7 +378,10 @@ public class RiposteClient implements ClientModInitializer {
 						if (lookVec.dotProduct(toTarget) < 0.5) continue;
 
 						String entityId = net.minecraft.registry.Registries.ENTITY_TYPE.getId(target.getType()).toString();
-						if (!Riposte.CONFIG.addons.finishers.finisherWhitelistMobs.contains(entityId)) continue;
+						if (!Riposte.CONFIG.addons.finishers.isFinisherAllowedFor(entityId)) continue;
+
+						float healthPercent = ((LivingEntity) target).getMaxHealth() > 0 ? (((LivingEntity) target).getHealth() / ((LivingEntity) target).getMaxHealth()) * 100f : 0f;
+						if (!Riposte.CONFIG.addons.finishers.isHealthEligible(healthPercent)) continue;
 
 						boolean canExecute = false;
 						if (Riposte.CONFIG.addons.finishers.finisherMode == nel.riposte.config.RiposteConfig.FinisherMode.GAUGE_METER) {
@@ -426,13 +430,16 @@ public class RiposteClient implements ClientModInitializer {
 
 				String entityId = net.minecraft.registry.Registries.ENTITY_TYPE.getId(target.getType()).toString();
 
-				if (Riposte.CONFIG.addons.finishers.finisherWhitelistMobs.contains(entityId)) {
+				if (Riposte.CONFIG.addons.finishers.isFinisherAllowedFor(entityId)) {
 					boolean canExecute = false;
 
-					if (Riposte.CONFIG.addons.finishers.finisherMode == nel.riposte.config.RiposteConfig.FinisherMode.GAUGE_METER) {
-						if (finisherData.getFinisherGauge(target.getId()) >= 100f) canExecute = true;
-					} else {
-						if (finisherData.getParryCount(target.getId()) >= Riposte.CONFIG.addons.finishers.finisherParryCountMax) canExecute = true;
+					float healthPercent = ((LivingEntity) target).getMaxHealth() > 0 ? (((LivingEntity) target).getHealth() / ((LivingEntity) target).getMaxHealth()) * 100f : 0f;
+					if (Riposte.CONFIG.addons.finishers.isHealthEligible(healthPercent)) {
+						if (Riposte.CONFIG.addons.finishers.finisherMode == nel.riposte.config.RiposteConfig.FinisherMode.GAUGE_METER) {
+							if (finisherData.getFinisherGauge(target.getId()) >= 100f) canExecute = true;
+						} else {
+							if (finisherData.getParryCount(target.getId()) >= Riposte.CONFIG.addons.finishers.finisherParryCountMax) canExecute = true;
+						}
 					}
 
 					if (canExecute) {
@@ -461,10 +468,16 @@ public class RiposteClient implements ClientModInitializer {
 						consumer.vertex(matrix4f, texSize, texSize, 0).color(255, 255, 255, 255).texture(1f, 1f).light(light).next();
 						consumer.vertex(matrix4f, texSize, -texSize, 0).color(255, 255, 255, 255).texture(1f, 0f).light(light).next();
 
+						matrices.push();
+						float textScale = CLIENT_CONFIG.addons.finishers.contextualButtonPromptTextScale;
+						matrices.scale(textScale, textScale, textScale);
+						Matrix4f textMatrix4f = matrices.peek().getPositionMatrix();
+
 						String keyName = finisherKey.getBoundKeyLocalizedText().getString().toUpperCase();
 						float textWidth = client.textRenderer.getWidth(keyName);
 
-						client.textRenderer.draw(keyName, -textWidth / 2f, -4f, 0xFFFFFF, false, matrix4f, context.consumers(), net.minecraft.client.font.TextRenderer.TextLayerType.SEE_THROUGH, 0x00000000, light);
+						client.textRenderer.draw(keyName, -textWidth / 2f, -4f, 0xFFFFFF, false, textMatrix4f, context.consumers(), net.minecraft.client.font.TextRenderer.TextLayerType.SEE_THROUGH, 0x00000000, light);
+						matrices.pop();
 
 						matrices.pop();
 					}

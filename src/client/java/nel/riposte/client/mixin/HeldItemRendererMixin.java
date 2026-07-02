@@ -42,6 +42,15 @@ public class HeldItemRendererMixin {
                 matrices.multiply(RotationAxis.POSITIVE_X.rotation(rotation.getX()));
 
                 matrices.translate(position.getX() / 16.0, position.getY() / 16.0, position.getZ() / 16.0);
+
+                Vec3f itemRotation = animationContainer.get3DTransform("right_item", TransformType.ROTATION, tickDelta, new Vec3f(0, 0, 0));
+                Vec3f itemPosition = animationContainer.get3DTransform("right_item", TransformType.POSITION, tickDelta, new Vec3f(0, 0, 0));
+
+                matrices.multiply(RotationAxis.POSITIVE_Z.rotation(itemRotation.getZ()));
+                matrices.multiply(RotationAxis.POSITIVE_Y.rotation(itemRotation.getY()));
+                matrices.multiply(RotationAxis.POSITIVE_X.rotation(itemRotation.getX()));
+
+                matrices.translate(itemPosition.getX() / 16.0, itemPosition.getY() / 16.0, itemPosition.getZ() / 16.0);
             }
         }
     }

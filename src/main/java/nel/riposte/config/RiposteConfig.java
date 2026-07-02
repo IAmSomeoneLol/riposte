@@ -25,6 +25,12 @@ public class RiposteConfig extends Config {
         BOTH
     }
 
+    public enum FinisherRestrictionMode {
+        WHITELIST,
+        BLACKLIST,
+        DISABLED
+    }
+
     public ConfigGroup parrySettingsGroup = new ConfigGroup("parrySettings");
     public int parryWindowMs = 175;
     public int parryCooldownMs = 10000;
@@ -73,6 +79,10 @@ public class RiposteConfig extends Config {
         public float finisherHealthReturnPercent = 10.0f;
         public float finisherFoodReturnPercent = 10.0f;
 
+        public FinisherRestrictionMode finisherAllowExecution = FinisherRestrictionMode.WHITELIST;
+
+        public float finisherHealthThresholdPercent = 35.0f;
+
         public List<String> finisherWhitelistMobs = List.of(
                 "minecraft:zombie",
                 "minecraft:zombie_villager",
@@ -86,5 +96,32 @@ public class RiposteConfig extends Config {
                 "minecraft:piglin",
                 "minecraft:piglin_brute"
         );
+
+        /**
+         * Central authority for "can this entity be finished off?" - used by both the server
+         * (actual execution gate) and the client (prompt visibility / keybind handling).
+         * WHITELIST: only entities in finisherWhitelistMobs are allowed.
+         * BLACKLIST: entities in finisherWhitelistMobs are NOT allowed, everything else is.
+         * DISABLED: no restriction at all, any LivingEntity is eligible.
+         */
+        public boolean isFinisherAllowedFor(String entityId) {
+            return switch (this.finisherAllowExecution) {
+                case WHITELIST -> this.finisherWhitelistMobs.contains(entityId);
+                case BLACKLIST -> !this.finisherWhitelistMobs.contains(entityId);
+                case DISABLED -> true;
+            };
+        }
+
+        /**
+         * Gate on the TARGET's current health percentage, not the player's.
+         * Gauge/parry-count filling is untouched by this - it always accumulates from hits landed.
+         * This only controls whether a finisher is allowed to actually EXECUTE (and, client-side,
+         * whether the prompt is shown at all) once the meter/count requirement is already met.
+         * Setting this to 100 effectively disables the requirement, since health can't exceed 100%
+         * under normal vanilla conditions.
+         */
+        public boolean isHealthEligible(float currentHealthPercent) {
+            return currentHealthPercent <= this.finisherHealthThresholdPercent;
+        }
     }
 }

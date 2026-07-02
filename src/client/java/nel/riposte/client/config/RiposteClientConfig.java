@@ -86,6 +86,7 @@ public class RiposteClientConfig extends Config {
 
     public static class Finishers extends ConfigSection {
         public float contextualButtonPromptSize = 0.02f;
+        public float contextualButtonPromptTextScale = 1.0f;
         public boolean cameraLock = true; // NEW
         public long cameraCenterPanningDurationMs = 300;
     }
