@@ -34,8 +34,8 @@ import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -93,7 +93,7 @@ public abstract class LivingEntityMixin implements HitstopData {
         if (source.getAttacker() instanceof PlayerEntity attacker) {
             var component = TrinketsApi.getTrinketComponent(attacker).orElse(null);
             if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
-                modifiedAmount *= 1.1f;
+                modifiedAmount *= (float) Riposte.CONFIG.accessories.honorableCape.damageDealtMultiplier;
             }
 
             if (component != null && component.isEquipped(Riposte.BLOODLUSTFUL_RING)) {
@@ -101,7 +101,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                 if (((Object) this instanceof LivingEntity victim) && victim.getId() == parryData.getLastParriedEntityId()) {
                     long timeSinceParry = System.currentTimeMillis() - parryData.getSuccessfulParryTimestamp();
                     if (timeSinceParry <= Riposte.CONFIG.kickComboWindowMs) {
-                        modifiedAmount *= 1.6f;
+                        modifiedAmount *= (float) Riposte.CONFIG.accessories.bloodlustfulRing.kickDamageMultiplier;
                     }
                 }
             }
@@ -110,7 +110,7 @@ public abstract class LivingEntityMixin implements HitstopData {
         if ((Object) this instanceof PlayerEntity victim) {
             var component = TrinketsApi.getTrinketComponent(victim).orElse(null);
             if (component != null && component.isEquipped(Riposte.BLOODLUSTFUL_RING)) {
-                modifiedAmount *= 1.5f;
+                modifiedAmount *= (float) Riposte.CONFIG.accessories.bloodlustfulRing.damageTakenMultiplier;
             }
         }
 
@@ -195,7 +195,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                 var component = TrinketsApi.getTrinketComponent(player).orElse(null);
                 int neuralCount = component != null ? component.getEquipped(Riposte.NEURAL_LINK).size() : 0;
 
-                if (neuralCount > 0 && player.getWorld().getRandom().nextFloat() < (0.50f * neuralCount)) {
+                if (neuralCount > 0 && player.getWorld().getRandom().nextFloat() < (Riposte.CONFIG.accessories.neuralLink.autoParryChance * neuralCount)) {
                     int cooldown = parryData.getCalculatedCooldown(Riposte.CONFIG.parryCooldownMs);
                     if (parryData.canParry(cooldown)) {
                         parryData.setParryTimestamp(System.currentTimeMillis());
@@ -217,7 +217,7 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                 if (source.isOf(DamageTypes.FALL)) {
                     if (component != null && component.isEquipped(Riposte.LEATHER_SOCK)) {
-                        parryData.setLeatherSockTicks(70);
+                        parryData.setLeatherSockTicks(Riposte.CONFIG.accessories.leatherSocks.speedDurationTicks);
                     }
 
                     float rollPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
@@ -225,15 +225,28 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                     parryData.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
-                    if (player.fallDistance > 8.0f && !player.getWorld().isClient) {
-                        net.minecraft.server.world.ServerWorld serverWorld = (net.minecraft.server.world.ServerWorld) player.getWorld();
-                        for (int i = 0; i < 36; i++) {
-                            double angle = i * (Math.PI * 2 / 36.0);
-                            double px = player.getX() + Math.cos(angle) * 1.5;
-                            double pz = player.getZ() + Math.sin(angle) * 1.5;
-                            serverWorld.spawnParticles(net.minecraft.particle.ParticleTypes.CLOUD, px, player.getY() + 0.2, pz, 1, Math.cos(angle)*0.2, 0.1, Math.sin(angle)*0.2, 0.05);
-                            serverWorld.spawnParticles(net.minecraft.particle.ParticleTypes.POOF, px, player.getY() + 0.2, pz, 1, Math.cos(angle)*0.2, 0.1, Math.sin(angle)*0.2, 0.05);
+                    if (!player.getWorld().isClient) {
+                        for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
+                            PacketByteBuf vfxBuf = PacketByteBufs.create();
+                            vfxBuf.writeDouble(player.getX());
+                            vfxBuf.writeDouble(player.getY());
+                            vfxBuf.writeDouble(player.getZ());
+                            ServerPlayNetworking.send(tracker, Riposte.FALL_PARRY_VFX_PACKET, vfxBuf);
                         }
+                        if (player instanceof ServerPlayerEntity serverPlayer) {
+                            PacketByteBuf vfxBuf = PacketByteBufs.create();
+                            vfxBuf.writeDouble(player.getX());
+                            vfxBuf.writeDouble(player.getY());
+                            vfxBuf.writeDouble(player.getZ());
+                            ServerPlayNetworking.send(serverPlayer, Riposte.FALL_PARRY_VFX_PACKET, vfxBuf);
+                        }
+                    }
+
+                    if (Riposte.CONFIG.enableSuccessParryRecharge) {
+                        parryData.refundParryCooldown((float) Riposte.CONFIG.globalParryCooldownRecharge);
+                    }
+                    if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
+                        parryData.refundParryCooldown((float) Riposte.CONFIG.accessories.honorableCape.cooldownCharge);
                     }
 
                     if (player instanceof ServerPlayerEntity serverPlayer) {
@@ -245,11 +258,9 @@ public abstract class LivingEntityMixin implements HitstopData {
                 }
 
                 if (component != null) {
-                    if (component.isEquipped(Riposte.COPPER_GUARD) || component.isEquipped(Riposte.VOID_GUARD)) {
-                        iFrames = 30;
-                    } else if (component.isEquipped(Riposte.IRON_GUARD)) {
-                        iFrames = 20;
-                    }
+                    if (component.isEquipped(Riposte.COPPER_GUARD)) iFrames = Riposte.CONFIG.accessories.copperGuard.invulnTimeTicks;
+                    else if (component.isEquipped(Riposte.VOID_GUARD)) iFrames = Riposte.CONFIG.accessories.voidGuard.invulnTimeTicks;
+                    else if (component.isEquipped(Riposte.IRON_GUARD)) iFrames = Riposte.CONFIG.accessories.ironGuard.invulnTimeTicks;
                 }
                 player.timeUntilRegen = iFrames;
 
@@ -341,8 +352,11 @@ public abstract class LivingEntityMixin implements HitstopData {
                     ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, buf);
                 }
 
+                if (Riposte.CONFIG.enableSuccessParryRecharge) {
+                    parryData.refundParryCooldown((float) Riposte.CONFIG.globalParryCooldownRecharge);
+                }
                 if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
-                    parryData.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
+                    parryData.refundParryCooldown((float) Riposte.CONFIG.accessories.honorableCape.cooldownCharge);
                 }
 
                 if (rawAttacker instanceof LivingEntity attacker) {
@@ -350,7 +364,7 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                     double kbStrength = Riposte.CONFIG.parryKnockback;
                     if (component != null && component.isEquipped(Riposte.IRON_GUARD)) {
-                        kbStrength *= 1.3;
+                        kbStrength *= Riposte.CONFIG.accessories.ironGuard.knockbackMultiplier;
                     }
 
                     boolean isBoss = attacker instanceof WitherEntity ||
@@ -358,11 +372,22 @@ public abstract class LivingEntityMixin implements HitstopData {
                             attacker instanceof WardenEntity ||
                             attacker instanceof ElderGuardianEntity;
 
+                    // SAFETY BOUNCE INJECTED HERE
                     if (isBoss) {
                         parryData.applyParryKnockback(attacker, kbStrength, player.getX() - attacker.getX(), player.getZ() - attacker.getZ());
+                        Vec3d atkVel = attacker.getVelocity();
+                        attacker.setVelocity(atkVel.x, Math.max(atkVel.y, 0.3), atkVel.z);
+                        attacker.velocityModified = true;
+
                         parryData.applyParryKnockback(player, kbStrength, attacker.getX() - player.getX(), attacker.getZ() - player.getZ());
+                        Vec3d pVel = player.getVelocity();
+                        player.setVelocity(pVel.x, Math.max(pVel.y, 0.3), pVel.z);
+                        player.velocityModified = true;
                     } else {
                         parryData.applyParryKnockback(attacker, kbStrength, player.getX() - attacker.getX(), player.getZ() - attacker.getZ());
+                        Vec3d atkVel = attacker.getVelocity();
+                        attacker.setVelocity(atkVel.x, Math.max(atkVel.y, 0.3), atkVel.z);
+                        attacker.velocityModified = true;
                     }
 
                     if (Riposte.CONFIG.hitstop) {

@@ -45,12 +45,11 @@ public interface ParryData {
         if (component == null) return baseCooldownMs;
 
         double rate = 1.0;
+        if (component.isEquipped(Riposte.IRON_GUARD)) rate += Riposte.CONFIG.accessories.ironGuard.rechargeRate;
+        if (component.isEquipped(Riposte.VOID_GUARD)) rate += Riposte.CONFIG.accessories.voidGuard.rechargeRate;
+        if (component.isEquipped(Riposte.COPPER_GUARD)) rate += Riposte.CONFIG.accessories.copperGuard.rechargeRate;
 
-        if (component.isEquipped(Riposte.IRON_GUARD)) rate += 3.0;
-        if (component.isEquipped(Riposte.VOID_GUARD)) rate += 5.0;
-        if (component.isEquipped(Riposte.COPPER_GUARD)) rate += 5.0;
-
-        if (component.isEquipped(Riposte.NEURAL_LINK)) rate *= 2.0;
+        if (component.isEquipped(Riposte.NEURAL_LINK)) rate *= Riposte.CONFIG.accessories.neuralLink.rechargeMultiplier;
 
         return (int) (baseCooldownMs / rate);
     }
@@ -61,7 +60,7 @@ public interface ParryData {
         if (component == null) return baseWindowMs;
 
         if (component.isEquipped(Riposte.BLOODLUSTFUL_RING)) {
-            return baseWindowMs * 2;
+            return (int) (baseWindowMs * Riposte.CONFIG.accessories.bloodlustfulRing.windowMultiplier);
         }
         return baseWindowMs;
     }

@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.item.ItemStack;
@@ -26,10 +27,16 @@ import net.minecraft.registry.Registry;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Rarity;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class Riposte implements ModInitializer {
 	public static final String MOD_ID = "riposte";
@@ -70,34 +77,102 @@ public class Riposte implements ModInitializer {
 	public static final Identifier FINISHER_FIST3_ID = new Identifier(MOD_ID, "finisher_fist3");
 	public static final SoundEvent FINISHER_FIST3_SOUND = SoundEvent.of(FINISHER_FIST3_ID);
 
-	public static final Item IRON_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "parry", null,
-			"tooltip.riposte.passive.projectile", "tooltip.riposte.modifier.recharge_rate_3", "tooltip.riposte.modifier.knockback_1_3", "tooltip.riposte.modifier.invuln_time_0_5");
+	public static final Item IRON_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "parry", null) {
+		@Override
+		public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+			super.appendTooltip(stack, world, tooltip, context);
+			tooltip.add(Text.translatable("tooltip.riposte.passive.projectile").formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.recharge_rate", Riposte.CONFIG.accessories.ironGuard.rechargeRate).formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.knockback", Riposte.CONFIG.accessories.ironGuard.knockbackMultiplier).formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.invuln_time", Riposte.CONFIG.accessories.ironGuard.invulnTimeTicks / 20.0f).formatted(Formatting.BLUE));
+		}
+	};
 
-	public static final Item LEATHER_SOCK = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "parry", null,
-			"tooltip.riposte.passive.fall", "tooltip.riposte.modifier.speed_on_fall_parry");
+	public static final Item LEATHER_SOCK = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "parry", null) {
+		@Override
+		public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+			super.appendTooltip(stack, world, tooltip, context);
+			tooltip.add(Text.translatable("tooltip.riposte.passive.fall").formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.speed_on_fall_parry",
+					(int)(Riposte.CONFIG.accessories.leatherSocks.speedMultiplier * 100),
+					Riposte.CONFIG.accessories.leatherSocks.speedDurationTicks / 20.0f).formatted(Formatting.BLUE));
+		}
+	};
 
-	public static final Item VOID_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "parry", null,
-			"tooltip.riposte.passive.all", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time_1");
+	public static final Item VOID_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "parry", null) {
+		@Override
+		public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+			super.appendTooltip(stack, world, tooltip, context);
+			tooltip.add(Text.translatable("tooltip.riposte.passive.all").formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.passive.infinite_kb").formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.recharge_rate", Riposte.CONFIG.accessories.voidGuard.rechargeRate).formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.invuln_time", Riposte.CONFIG.accessories.voidGuard.invulnTimeTicks / 20.0f).formatted(Formatting.BLUE));
+		}
+	};
 
-	public static final Item COPPER_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "parry", null,
-			"tooltip.riposte.passive.projectile", "tooltip.riposte.passive.fall", "tooltip.riposte.passive.infinite_kb", "tooltip.riposte.modifier.recharge_rate_5", "tooltip.riposte.modifier.invuln_time_1");
+	public static final Item COPPER_GUARD = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "parry", null) {
+		@Override
+		public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+			super.appendTooltip(stack, world, tooltip, context);
+			tooltip.add(Text.translatable("tooltip.riposte.passive.projectile").formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.passive.fall").formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.passive.infinite_kb").formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.recharge_rate", Riposte.CONFIG.accessories.copperGuard.rechargeRate).formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.invuln_time", Riposte.CONFIG.accessories.copperGuard.invulnTimeTicks / 20.0f).formatted(Formatting.BLUE));
+		}
+	};
 
-	public static final Item BLOODLUSTFUL_RING = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "ring", null,
-			"tooltip.riposte.passive.bloodring_1", "tooltip.riposte.modifier.kick_damage_1_6", "tooltip.riposte.debuff.damage_taken", "tooltip.riposte.warning.no_stack");
+	public static final Item BLOODLUSTFUL_RING = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "ring", null) {
+		@Override
+		public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+			super.appendTooltip(stack, world, tooltip, context);
+			tooltip.add(Text.translatable("tooltip.riposte.passive.bloodring_1", Riposte.CONFIG.accessories.bloodlustfulRing.windowMultiplier).formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.kick_damage", Riposte.CONFIG.accessories.bloodlustfulRing.kickDamageMultiplier).formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.debuff.damage_taken", Riposte.CONFIG.accessories.bloodlustfulRing.damageTakenMultiplier).formatted(Formatting.DARK_RED));
+			tooltip.add(Text.translatable("tooltip.riposte.warning.no_stack").formatted(Formatting.DARK_RED));
+		}
+	};
 
-	public static final Item HONORABLE_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "cape", null,
-			"tooltip.riposte.passive.charge_meter", "tooltip.riposte.passive.damage_dealt");
+	public static final Item HONORABLE_CAPE = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "cape", null) {
+		@Override
+		public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+			super.appendTooltip(stack, world, tooltip, context);
+			tooltip.add(Text.translatable("tooltip.riposte.passive.charge_meter").formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.passive.damage_dealt", Riposte.CONFIG.accessories.honorableCape.damageDealtMultiplier).formatted(Formatting.BLUE));
+		}
+	};
 
-	public static final Item NEURAL_LINK = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "hat", null,
-			"tooltip.riposte.modifier.recharge_rate_100", "tooltip.riposte.modifier.auto_fall_parry_50");
+	public static final Item NEURAL_LINK = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.RARE), "hat", null) {
+		@Override
+		public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+			super.appendTooltip(stack, world, tooltip, context);
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.recharge_rate_percent", (int)((Riposte.CONFIG.accessories.neuralLink.rechargeMultiplier - 1.0) * 100)).formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.auto_fall_parry", (int)(Riposte.CONFIG.accessories.neuralLink.autoParryChance * 100)).formatted(Formatting.BLUE));
+		}
+	};
 
-	public static final Item SHULKER_HEAD_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "charm", "head/hat",
-			"tooltip.riposte.passive.head_slot", "tooltip.riposte.warning.no_stack");
+	public static final Item SHULKER_HEAD_PLATE = new RiposteAccessoryItem(new Item.Settings().maxCount(1).rarity(Rarity.EPIC), "charm", "head/hat") {
+		@Override
+		protected int getBonusSlotCount() {
+			return Riposte.CONFIG.accessories.shulkerHeadPlate.slotBonus;
+		}
+
+		@Override
+		public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+			super.appendTooltip(stack, world, tooltip, context);
+			tooltip.add(Text.translatable("tooltip.riposte.passive.head_slot", Riposte.CONFIG.accessories.shulkerHeadPlate.slotBonus).formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.modifier.attack_speed_on_kick_combo",
+					(int)(Riposte.CONFIG.accessories.shulkerHeadPlate.attackSpeedBoost * 100),
+					Riposte.CONFIG.accessories.shulkerHeadPlate.attackSpeedDurationTicks / 20.0f).formatted(Formatting.BLUE));
+			tooltip.add(Text.translatable("tooltip.riposte.warning.no_stack").formatted(Formatting.DARK_RED));
+		}
+	};
 
 	public static final Identifier PARRY_SYNC_PACKET = new Identifier(MOD_ID, "parry_sync");
 	public static final Identifier PARRY_SUCCESS_PACKET = new Identifier(MOD_ID, "parry_success");
 	public static final Identifier COMBO_SUCCESS_PACKET = new Identifier(MOD_ID, "combo_success");
 	public static final Identifier PARRY_VFX_PACKET = new Identifier(MOD_ID, "parry_vfx");
+	public static final Identifier FALL_PARRY_VFX_PACKET = new Identifier(MOD_ID, "fall_parry_vfx");
 	public static final Identifier LETHAL_VFX_PACKET = new Identifier(MOD_ID, "lethal_vfx");
 
 	public static final Identifier EXECUTE_FINISHER_PACKET = new Identifier(MOD_ID, "execute_finisher");

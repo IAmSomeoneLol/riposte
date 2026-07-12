@@ -21,21 +21,24 @@ public class RiposteAccessoryItem extends TrinketItem {
 
     private final String targetSlot;
     private final String bonusSlot;
-    private final String[] tooltipKeys;
 
-    public RiposteAccessoryItem(Settings settings, String targetSlot, String bonusSlot, String... tooltipKeys) {
+    public RiposteAccessoryItem(Settings settings, String targetSlot, String bonusSlot) {
         super(settings);
         this.targetSlot = targetSlot;
         this.bonusSlot = bonusSlot;
-        this.tooltipKeys = tooltipKeys;
+    }
+
+    protected int getBonusSlotCount() {
+        return 1;
     }
 
     @Override
     public Multimap<EntityAttribute, EntityAttributeModifier> getModifiers(ItemStack stack, SlotReference slot, LivingEntity entity, UUID uuid) {
         var modifiers = super.getModifiers(stack, slot, entity, uuid);
+        int bonusAmount = getBonusSlotCount();
 
-        if (this.bonusSlot != null && !this.bonusSlot.isEmpty()) {
-            SlotAttributes.addSlotModifier(modifiers, this.bonusSlot, uuid, 1, EntityAttributeModifier.Operation.ADDITION);
+        if (this.bonusSlot != null && !this.bonusSlot.isEmpty() && bonusAmount > 0) {
+            SlotAttributes.addSlotModifier(modifiers, this.bonusSlot, uuid, bonusAmount, EntityAttributeModifier.Operation.ADDITION);
         }
 
         return modifiers;
@@ -43,23 +46,8 @@ public class RiposteAccessoryItem extends TrinketItem {
 
     @Override
     public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
-        if (this.tooltipKeys.length > 0) {
-            tooltip.add(Text.empty());
-
-            // Renders the "When in [Slot]:" text in Gold (Orange)
-            tooltip.add(Text.translatable("tooltip.riposte.slot." + this.targetSlot).formatted(Formatting.GOLD));
-
-            for (String key : tooltipKeys) {
-                Formatting color = Formatting.BLUE;
-
-                // Only debuffs will be painted Dark Red
-                if (key.contains("debuff")) {
-                    color = Formatting.DARK_RED;
-                }
-
-                tooltip.add(Text.translatable(key).formatted(color));
-            }
-        }
+        tooltip.add(Text.empty());
+        tooltip.add(Text.translatable("tooltip.riposte.slot." + this.targetSlot).formatted(Formatting.GOLD));
         super.appendTooltip(stack, world, tooltip, context);
     }
 }

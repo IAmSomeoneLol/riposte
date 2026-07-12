@@ -160,6 +160,28 @@ public class RiposteClient implements ClientModInitializer {
 			}
 		});
 
+		ClientPlayNetworking.registerGlobalReceiver(Riposte.FALL_PARRY_VFX_PACKET, (client, handler, buf, responseSender) -> {
+			double px = buf.readDouble();
+			double py = buf.readDouble();
+			double pz = buf.readDouble();
+
+			client.execute(() -> {
+				if (client.world == null) return;
+				if (CLIENT_CONFIG.particles.parryFallParticle) {
+					for (int i = 0; i < 36; i++) {
+						double angle = i * (Math.PI * 2 / 36.0);
+						double x = px + Math.cos(angle) * 1.5;
+						double z = pz + Math.sin(angle) * 1.5;
+						double vx = Math.cos(angle) * 0.2;
+						double vy = 0.1;
+						double vz = Math.sin(angle) * 0.2;
+						client.world.addParticle(ParticleTypes.CLOUD, x, py + 0.2, z, vx, vy, vz);
+						client.world.addParticle(ParticleTypes.POOF, x, py + 0.2, z, vx, vy, vz);
+					}
+				}
+			});
+		});
+
 		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_VFX_PACKET, (client, handler, buf, responseSender) -> {
 			double px = buf.readDouble();
 			double py = buf.readDouble();
@@ -170,12 +192,22 @@ public class RiposteClient implements ClientModInitializer {
 
 			client.execute(() -> {
 				if (client.world == null) return;
-				if (CLIENT_CONFIG.particleNormal) {
-					for (int i = 0; i < 15; i++) client.world.addParticle(ParticleTypes.FIREWORK, px, py, pz, random.nextGaussian() * 0.15, random.nextGaussian() * 0.15, random.nextGaussian() * 0.15);
+				if (CLIENT_CONFIG.particles.particleNormal) {
+					for (int i = 0; i < CLIENT_CONFIG.particles.normalParticleCount; i++) {
+						client.world.addParticle(ParticleTypes.FIREWORK, px, py, pz,
+								random.nextGaussian() * CLIENT_CONFIG.particles.normalParticleVelocity,
+								random.nextGaussian() * CLIENT_CONFIG.particles.normalParticleVelocity,
+								random.nextGaussian() * CLIENT_CONFIG.particles.normalParticleVelocity);
+					}
 				}
-				if (isWeapon && CLIENT_CONFIG.particleHeavy) {
+				if (isWeapon && CLIENT_CONFIG.particles.particleHeavy) {
 					DefaultParticleType trailType = isHeavyDamage ? Riposte.PARRY_TRAIL : Riposte.PARRY_TRAIL_LIGHT;
-					for (int i = 0; i < 18; i++) client.world.addParticle(trailType, px, py, pz, (random.nextDouble() - 0.5) * 3.5, (random.nextDouble() - 0.5) * 3.5, (random.nextDouble() - 0.5) * 3.5);
+					for (int i = 0; i < CLIENT_CONFIG.particles.heavyParticleCount; i++) {
+						client.world.addParticle(trailType, px, py, pz,
+								(random.nextDouble() - 0.5) * CLIENT_CONFIG.particles.heavyParticleVelocity,
+								(random.nextDouble() - 0.5) * CLIENT_CONFIG.particles.heavyParticleVelocity,
+								(random.nextDouble() - 0.5) * CLIENT_CONFIG.particles.heavyParticleVelocity);
+					}
 				}
 			});
 		});
@@ -214,8 +246,13 @@ public class RiposteClient implements ClientModInitializer {
 					lastParryWasFall = isFallParry;
 					if (isFallParry) data.setParryTimestamp(now);
 
+					if (Riposte.CONFIG.enableSuccessParryRecharge) {
+						data.refundParryCooldown((float) Riposte.CONFIG.globalParryCooldownRecharge);
+					}
 					var component = TrinketsApi.getTrinketComponent(client.player).orElse(null);
-					if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) data.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
+					if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
+						data.refundParryCooldown((float) Riposte.CONFIG.accessories.honorableCape.cooldownCharge);
+					}
 
 					String animName;
 					if (isFallParry) animName = "parry_fall_damage";

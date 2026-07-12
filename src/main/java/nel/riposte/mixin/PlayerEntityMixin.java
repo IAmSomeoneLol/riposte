@@ -58,8 +58,12 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
     @Unique private long successfulParryTimestamp = 0L;
     @Unique private long successfulComboTimestamp = 0L;
     @Unique private int lastParriedEntityId = -1;
+
     @Unique private int leatherSockTicks = 0;
     @Unique private static final UUID LEATHER_SOCK_SPEED_UUID = UUID.fromString("b5b8d810-761e-45fa-8eb8-4dc4eb6b871c");
+
+    @Unique private int riposte$shulkerAttackSpeedTicks = 0;
+    @Unique private static final UUID SHULKER_ATTACK_SPEED_UUID = UUID.fromString("e5c3c0a1-7b0b-4b2a-8c1a-2d3b4a5b6c7d");
 
     @Unique private boolean riposte$isExecutingFinisher = false;
     @Unique private int riposte$finisherTargetId = -1;
@@ -112,8 +116,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
         float before = getFinisherGauge(targetId);
         float after = Math.min(300f, before + amount);
         this.riposte$gaugeMeters.put(targetId, after);
-        // NOTE: the "ready" timestamp is no longer set here. It's now set in riposte$processFinisherSequence,
-        // only once the target ALSO satisfies the health threshold - see that method for why.
     }
 
     @Override
@@ -137,7 +139,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
     public void addParryCount(int targetId) {
         int current = getParryCount(targetId);
         this.riposte$parryCounts.put(targetId, current + 1);
-        // NOTE: same as addFinisherGauge above - ready timestamp now starts in riposte$processFinisherSequence.
     }
 
     @Override
@@ -225,7 +226,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                         long readyTime = this.getGaugeReadyTimestamp(id);
 
                         if (healthEligible) {
-                            // Prompt just became visible right now - start the timeout timer from this tick.
                             if (readyTime <= 0) {
                                 this.setGaugeReadyTimestamp(id, now);
                             } else if (now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs) {
@@ -233,8 +233,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                                 return true;
                             }
                         } else if (readyTime > 0) {
-                            // Target healed back above the threshold - hide the prompt and reset the timer
-                            // so it starts fresh (rather than expiring silently) once it drops low again.
                             this.riposte$gaugeReadyTimestamps.remove(id);
                         }
                     } else if (current > 0) {
@@ -282,7 +280,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
 
             Entity targetRaw = player.getWorld().getEntityById(this.riposte$finisherTargetId);
 
-            // --- FIX 1: Allows animation to fully complete over dying corpses! ---
             if (targetRaw instanceof LivingEntity target && !target.isRemoved()) {
 
                 Vec3d diff = target.getPos().subtract(player.getPos()).multiply(1.0, 0, 1.0);
@@ -354,7 +351,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                                     if (isLethal) {
                                         target.setHealth(0);
 
-                                        // --- FIX 2: Player receives reward EXACTLY when the lethal blow connects! ---
                                         if (Riposte.CONFIG.addons.finishers.finisherRewardEnabled) {
                                             float hpPercent = Riposte.CONFIG.addons.finishers.finisherHealthReturnPercent / 100.0f;
                                             player.heal(player.getMaxHealth() * hpPercent);
@@ -410,7 +406,7 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
     }
 
     @Inject(method = "tick", at = @At("HEAD"))
-    private void riposte$tickLeatherSockAttribute(CallbackInfo ci) {
+    private void riposte$tickAccessoryAttributes(CallbackInfo ci) {
         PlayerEntity player = (PlayerEntity) (Object) this;
         if (!player.getWorld().isClient) {
             var speedAttr = player.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
@@ -418,11 +414,25 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                 if (this.leatherSockTicks > 0) {
                     this.leatherSockTicks--;
                     if (speedAttr.getModifier(LEATHER_SOCK_SPEED_UUID) == null) {
-                        speedAttr.addTemporaryModifier(new EntityAttributeModifier(LEATHER_SOCK_SPEED_UUID, "Leather Sock Speed", 0.1, EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
+                        speedAttr.addTemporaryModifier(new EntityAttributeModifier(LEATHER_SOCK_SPEED_UUID, "Leather Sock Speed", Riposte.CONFIG.accessories.leatherSocks.speedMultiplier, EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
                     }
                 } else {
                     if (speedAttr.getModifier(LEATHER_SOCK_SPEED_UUID) != null) {
                         speedAttr.removeModifier(LEATHER_SOCK_SPEED_UUID);
+                    }
+                }
+            }
+
+            var attackSpeedAttr = player.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_SPEED);
+            if (attackSpeedAttr != null) {
+                if (this.riposte$shulkerAttackSpeedTicks > 0) {
+                    this.riposte$shulkerAttackSpeedTicks--;
+                    if (attackSpeedAttr.getModifier(SHULKER_ATTACK_SPEED_UUID) == null) {
+                        attackSpeedAttr.addTemporaryModifier(new EntityAttributeModifier(SHULKER_ATTACK_SPEED_UUID, "Shulker Attack Speed", Riposte.CONFIG.accessories.shulkerHeadPlate.attackSpeedBoost, EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
+                    }
+                } else {
+                    if (attackSpeedAttr.getModifier(SHULKER_ATTACK_SPEED_UUID) != null) {
+                        attackSpeedAttr.removeModifier(SHULKER_ATTACK_SPEED_UUID);
                     }
                 }
             }
@@ -502,10 +512,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
 
                 boolean isHeavyDamage = speed > 2.0;
 
-                // TEMP DEBUG - remove once the heavy-particle-on-fist bug is confirmed/fixed
-                Riposte.LOGGER.info("[Riposte DEBUG] Projectile deflect VFX -> player={}, mainHandItem={}, isWeapon={}, speed={}, isHeavyDamage={}",
-                        player.getName().getString(), item, isWeapon, speed, isHeavyDamage);
-
                 float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.6f;
                 SoundEvent soundToPlay = isWeapon ? Riposte.WEAPON_PARRY_SOUND : Riposte.NORMAL_PARRY_SOUND;
 
@@ -552,9 +558,12 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                 this.setSuccessfulParryTimestamp(System.currentTimeMillis());
                 this.setLastParriedEntityId(projectile.getId());
 
+                if (Riposte.CONFIG.enableSuccessParryRecharge) {
+                    this.refundParryCooldown((float) Riposte.CONFIG.globalParryCooldownRecharge);
+                }
                 var component = TrinketsApi.getTrinketComponent(player).orElse(null);
                 if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
-                    this.refundParryCooldown(Riposte.CONFIG.wanderersCapeCooldownCharge);
+                    this.refundParryCooldown((float) Riposte.CONFIG.accessories.honorableCape.cooldownCharge);
                 }
 
                 if (player instanceof ServerPlayerEntity serverPlayer) {
@@ -601,10 +610,17 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
 
                     var component = TrinketsApi.getTrinketComponent(player).orElse(null);
                     if (component != null && component.isEquipped(Riposte.IRON_GUARD)) {
-                        heavyKnockback *= 1.3;
+                        heavyKnockback *= Riposte.CONFIG.accessories.ironGuard.knockbackMultiplier;
+                    }
+                    if (component != null && component.isEquipped(Riposte.SHULKER_HEAD_PLATE)) {
+                        this.riposte$shulkerAttackSpeedTicks = Riposte.CONFIG.accessories.shulkerHeadPlate.attackSpeedDurationTicks;
                     }
 
+                    // SAFETY BOUNCE INJECTED HERE
                     this.applyParryKnockback(livingTarget, heavyKnockback, player.getX() - livingTarget.getX(), player.getZ() - livingTarget.getZ());
+                    Vec3d targetVel = livingTarget.getVelocity();
+                    livingTarget.setVelocity(targetVel.x, Math.max(targetVel.y, 0.3), targetVel.z);
+                    livingTarget.velocityModified = true;
 
                     this.lastParriedEntityId = -1;
 

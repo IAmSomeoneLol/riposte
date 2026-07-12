@@ -63,12 +63,20 @@ public class RiposteClientConfig extends Config {
     @ConfigGroup.Pop
     public int screenFlashDurationMs = 250;
 
-    public ConfigGroup particleConfigGroup = new ConfigGroup("particleConfig");
-    public boolean particleNormal = true;
-    @ConfigGroup.Pop
-    public boolean particleHeavy = true;
-
+    public Particles particles = new Particles();
     public Addons addons = new Addons();
+
+    public static class Particles extends ConfigSection {
+        public boolean parryFallParticle = true;
+
+        public boolean particleNormal = true;
+        public int normalParticleCount = 25;
+        public double normalParticleVelocity = 0.15;
+
+        public boolean particleHeavy = true;
+        public int heavyParticleCount = 30;
+        public double heavyParticleVelocity = 3.5;
+    }
 
     public static class Addons extends ConfigSection {
         public Finishers finishers = new Finishers();
