@@ -157,6 +157,25 @@ public abstract class LivingEntityMixin implements HitstopData {
         }
     }
 
+    @Inject(method = "onDeath", at = @At("HEAD"))
+    private void riposte$onCreeperDeath(DamageSource source, CallbackInfo ci) {
+        LivingEntity thisEntity = (LivingEntity) (Object) this;
+
+        if (thisEntity instanceof net.minecraft.entity.mob.CreeperEntity creeper && !creeper.getWorld().isClient) {
+            if (source.getSource() instanceof net.minecraft.entity.projectile.ProjectileEntity projectile) {
+                if (projectile.getCommandTags().contains("riposte_from_skeleton")) {
+                    if (source.getAttacker() instanceof PlayerEntity) {
+                        var optional = net.minecraft.registry.Registries.ITEM.getEntryList(net.minecraft.registry.tag.ItemTags.CREEPER_DROP_MUSIC_DISCS)
+                                .flatMap(entries -> entries.getRandom(creeper.getWorld().getRandom()));
+                        if (optional.isPresent()) {
+                            creeper.dropItem(optional.get().value());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
     private void riposte$onDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         LivingEntity thisEntity = (LivingEntity) (Object) this;
@@ -372,7 +391,6 @@ public abstract class LivingEntityMixin implements HitstopData {
                             attacker instanceof WardenEntity ||
                             attacker instanceof ElderGuardianEntity;
 
-                    // SAFETY BOUNCE INJECTED HERE
                     if (isBoss) {
                         parryData.applyParryKnockback(attacker, kbStrength, player.getX() - attacker.getX(), player.getZ() - attacker.getZ());
                         Vec3d atkVel = attacker.getVelocity();

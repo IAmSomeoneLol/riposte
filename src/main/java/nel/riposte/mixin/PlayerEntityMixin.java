@@ -483,6 +483,13 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                 Vec3d lookDir = player.getRotationVector();
                 double speed = Math.max(projectile.getVelocity().length(), 1.5);
 
+                Entity originalOwner = projectile.getOwner();
+
+                // NATIVE TRACKING: Appends vanilla command tags (scoreboard tags) safely
+                if (originalOwner instanceof net.minecraft.entity.mob.AbstractSkeletonEntity) {
+                    projectile.addCommandTag("riposte_from_skeleton");
+                }
+
                 projectile.setOwner(player);
 
                 projectile.setPosition(
@@ -492,7 +499,7 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                 );
 
                 if (projectile instanceof PersistentProjectileEntity arrow) {
-                    ((PersistentProjectileEntityAccessor) arrow).setInGround(false);
+                    ((nel.riposte.mixin.PersistentProjectileEntityAccessor) arrow).setInGround(false);
                     arrow.setVelocity(lookDir.x, lookDir.y, lookDir.z, 3.0F, 0.0F);
                 } else {
                     projectile.setVelocity(lookDir.x, lookDir.y, lookDir.z, (float) speed * 1.5f, 0.0f);
@@ -521,9 +528,9 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                     if (Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.NORMAL_PARRY || Riposte.CONFIG.addons.finishers.finisherFillOn == RiposteConfig.FinisherTrigger.BOTH) {
                         FinisherData finisherData = (FinisherData) player;
                         if (Riposte.CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
-                            finisherData.addFinisherGauge(projectile.getOwner() != null ? projectile.getOwner().getId() : -1, Riposte.CONFIG.addons.finishers.finisherFillOnParry);
-                        } else if (projectile.getOwner() != null) {
-                            finisherData.addParryCount(projectile.getOwner().getId());
+                            finisherData.addFinisherGauge(originalOwner != null ? originalOwner.getId() : -1, Riposte.CONFIG.addons.finishers.finisherFillOnParry);
+                        } else if (originalOwner != null) {
+                            finisherData.addParryCount(originalOwner.getId());
                         }
                     }
                 }
@@ -569,8 +576,8 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                 if (player instanceof ServerPlayerEntity serverPlayer) {
                     PacketByteBuf successBuf = PacketByteBufs.create();
                     successBuf.writeBoolean(false);
-                    successBuf.writeInt(projectile.getOwner() != null ? projectile.getOwner().getId() : -1);
-                    successBuf.writeFloat(((FinisherData) player).getFinisherGauge(projectile.getOwner() != null ? projectile.getOwner().getId() : -1));
+                    successBuf.writeInt(originalOwner != null ? originalOwner.getId() : -1);
+                    successBuf.writeFloat(((FinisherData) player).getFinisherGauge(originalOwner != null ? originalOwner.getId() : -1));
                     ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, successBuf);
                 }
             }
@@ -616,7 +623,6 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                         this.riposte$shulkerAttackSpeedTicks = Riposte.CONFIG.accessories.shulkerHeadPlate.attackSpeedDurationTicks;
                     }
 
-                    // SAFETY BOUNCE INJECTED HERE
                     this.applyParryKnockback(livingTarget, heavyKnockback, player.getX() - livingTarget.getX(), player.getZ() - livingTarget.getZ());
                     Vec3d targetVel = livingTarget.getVelocity();
                     livingTarget.setVelocity(targetVel.x, Math.max(targetVel.y, 0.3), targetVel.z);

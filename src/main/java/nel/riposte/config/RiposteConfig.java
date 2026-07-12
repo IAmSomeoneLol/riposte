@@ -24,7 +24,7 @@ public class RiposteConfig extends Config {
     public double parryKnockback = 0.5;
     public boolean allowParryWhileUsingItem = false;
     public boolean enableSuccessParryRecharge = true;
-    public double globalParryCooldownRecharge = 0.3; // 30%
+    public double globalParryCooldownRecharge = 0.15; // 30%
     @ConfigGroup.Pop
     public boolean enforceKnockback = true;
 
@@ -106,14 +106,14 @@ public class RiposteConfig extends Config {
         public FinisherTrigger finisherFillOn = FinisherTrigger.BOTH;
         public float finisherFillOnParry = 25.0f;
         public float finisherFillOnKickCombo = 25.0f;
-        public float finisherGaugeConsumptionPerSecond = 15.0f;
-        public int finisherParryCountMax = 5;
+        public float finisherGaugeConsumptionPerSecond = 10.0f;
+        public int finisherParryCountMax = 8;
         public int finisherTimeoutMs = 6000;
         public boolean finisherRewardEnabled = true;
         public float finisherHealthReturnPercent = 10.0f;
         public float finisherFoodReturnPercent = 10.0f;
         public FinisherRestrictionMode finisherAllowExecution = FinisherRestrictionMode.WHITELIST;
-        public float finisherHealthThresholdPercent = 35.0f;
+        public float finisherHealthThresholdPercent = 30.0f;
 
         public List<String> finisherWhitelistMobs = List.of(
                 "minecraft:zombie", "minecraft:zombie_villager", "minecraft:husk",

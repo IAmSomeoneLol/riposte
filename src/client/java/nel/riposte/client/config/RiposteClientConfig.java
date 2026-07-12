@@ -43,7 +43,7 @@ public class RiposteClientConfig extends Config {
 
     public ConfigGroup cameraRecoilGroup = new ConfigGroup("cameraRecoil");
     public boolean cameraRecoil = true;
-    public float recoilIntensity = 50.5f;
+    public float recoilIntensity = 70.5f;
     public int recoilDurationMs = 750;
     @ConfigGroup.Pop
     public boolean parryFallCameraFlow = true;
@@ -71,7 +71,7 @@ public class RiposteClientConfig extends Config {
 
         public boolean particleNormal = true;
         public int normalParticleCount = 25;
-        public double normalParticleVelocity = 0.15;
+        public double normalParticleVelocity = 0.65;
 
         public boolean particleHeavy = true;
         public int heavyParticleCount = 30;
@@ -83,8 +83,8 @@ public class RiposteClientConfig extends Config {
     }
 
     public static class Finishers extends ConfigSection {
-        public float contextualButtonPromptSize = 0.02f;
-        public float contextualButtonPromptTextScale = 1.0f;
+        public float contextualButtonPromptSize = 0.005f;
+        public float contextualButtonPromptTextScale = 2.5f;
         public boolean cameraLock = true;
         public long cameraCenterPanningDurationMs = 300;
     }
