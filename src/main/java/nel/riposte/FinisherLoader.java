@@ -18,7 +18,6 @@ import java.util.Random;
 
 public class FinisherLoader extends SinglePreparationResourceReloader<List<FinisherDefinition>> implements IdentifiableResourceReloadListener {
 
-    // --- ENABLED LENIENT PARSING: This allows you to use standard // comments in your JSON files! ---
     private static final Gson GSON = new GsonBuilder().setLenient().create();
     private static final List<FinisherDefinition> REGISTRY = new ArrayList<>();
     private static final Random RANDOM = new Random();
@@ -64,7 +63,8 @@ public class FinisherLoader extends SinglePreparationResourceReloader<List<Finis
         boolean isGrounded = target.isOnGround();
 
         List<FinisherDefinition> valid = REGISTRY.stream()
-                .filter(def -> def.target_size != null && def.target_size.equalsIgnoreCase(targetSize))
+                // Modified to accept exact matches OR the "ALL" fallback
+                .filter(def -> def.target_size != null && (def.target_size.equalsIgnoreCase(targetSize) || def.target_size.equalsIgnoreCase("ALL")))
                 .filter(def -> !def.requires_grounded || isGrounded)
                 .filter(def -> def.weapon_requirement == null ||
                         def.weapon_requirement.equalsIgnoreCase("ANY") ||

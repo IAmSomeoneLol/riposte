@@ -1,27 +1,27 @@
 {
   "id": "riposte:medium_weapon",
   "animation_id": "medium_weapon_finisher",
-  "target_size": "MEDIUM",
+  "target_size": "ALL",
   "requires_grounded": false,
   "weapon_requirement": "WEAPON",
   "total_duration_ticks": 34,
   "disable_head_tracking": false,
   "timeline": [
-    { "tick": 6, "action": "sound", "values": ["riposte:finisher_fist1", "riposte:finisher_fist2"] },
-    { "tick": 6, "action": "camera_shake", "amount": 4.0 },
-    { "tick": 6, "action": "camera_recoil" },
-    { "tick": 6, "action": "flash" },
-    { "tick": 6, "action": "entity_pitch", "amount": -30.0 },
-    { "tick": 6, "action": "blood", "count": 25, "y_offset": 0.5 },
-    { "tick": 6, "action": "damage", "value": "half_current" },
+    { "tick": 4, "action": "sound", "values": ["riposte:finisher_fist1", "riposte:finisher_fist2"] },
+    { "tick": 4, "action": "camera_shake", "amount": 4.0 },
+    { "tick": 4, "action": "camera_recoil" },
+    { "tick": 4, "action": "flash" },
+    { "tick": 4, "action": "entity_pitch", "amount": -30.0 },
+    { "tick": 4, "action": "blood", "count": 25, "y_offset": 0.5 },
+    { "tick": 4, "action": "damage", "value": "half_current" },
 
-    { "tick": 24, "action": "sound", "value": "riposte:finisher_fist3" },
-    { "tick": 24, "action": "camera_shake", "amount": 8.0 },
-    { "tick": 24, "action": "camera_recoil" },
-    { "tick": 24, "action": "flash" },
-    { "tick": 24, "action": "entity_pitch", "amount": -60.0 },
-    { "tick": 24, "action": "blood", "count": 40, "y_offset": 0.5 },
-    { "tick": 24, "action": "camera_move", "z_offset": -1.5 },
-    { "tick": 24, "action": "damage", "value": "lethal" }
+    { "tick": 18, "action": "sound", "value": "riposte:finisher_fist3" },
+    { "tick": 18, "action": "camera_shake", "amount": 8.0 },
+    { "tick": 18, "action": "camera_recoil" },
+    { "tick": 18, "action": "flash" },
+    { "tick": 18, "action": "entity_pitch", "amount": -60.0 },
+    { "tick": 18, "action": "blood", "count": 40, "y_offset": 0.5 },
+    { "tick": 18, "action": "camera_move", "z_offset": -1.5 },
+    { "tick": 19, "action": "damage", "value": "lethal" }
   ]
 }

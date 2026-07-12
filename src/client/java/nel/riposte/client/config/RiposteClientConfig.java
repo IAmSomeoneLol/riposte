@@ -12,21 +12,9 @@ public class RiposteClientConfig extends Config {
         super(new Identifier(Riposte.MOD_ID, "client"));
     }
 
-    public enum ExecutionMode {
-        KEYBIND,
-        CAMERA
-    }
-
-    public enum IconMode {
-        STATIC,
-        DYNAMIC
-    }
-
-    public enum FlashType {
-        WHITE,
-        BLACK
-    }
-
+    public enum ExecutionMode { KEYBIND, CAMERA }
+    public enum IconMode { STATIC, DYNAMIC }
+    public enum FlashType { WHITE, BLACK }
     public enum AnchorPoint {
         TOP_LEFT, TOP_CENTER, TOP_RIGHT,
         CENTER_LEFT, CENTER, CENTER_RIGHT,
@@ -34,6 +22,8 @@ public class RiposteClientConfig extends Config {
     }
 
     public ExecutionMode parryActivation = ExecutionMode.KEYBIND;
+
+    public boolean firstPersonAnimations = true;
 
     public ConfigGroup iconCooldownGroup = new ConfigGroup("iconCooldown");
     public AnchorPoint iconAnchor = AnchorPoint.BOTTOM_CENTER;
@@ -87,7 +77,7 @@ public class RiposteClientConfig extends Config {
     public static class Finishers extends ConfigSection {
         public float contextualButtonPromptSize = 0.02f;
         public float contextualButtonPromptTextScale = 1.0f;
-        public boolean cameraLock = true; // NEW
+        public boolean cameraLock = true;
         public long cameraCenterPanningDurationMs = 300;
     }
 }

@@ -92,6 +92,7 @@
   "riposte.client.addons.finishers.contextualButtonPromptSize": "Contextual Button Prompt Size",
   "riposte.client.addons.finishers.cameraLock": "Lock Camera During Finisher",
 
+  "riposte.client.firstPersonAnimations": "First Person Animations",
   "riposte.client.parryActivation": "Parry Activation",
   "riposte.client.iconCooldown": "Icon Cooldown",
   "riposte.client.iconAnchor": "Icon Anchor Point",

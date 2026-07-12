@@ -164,7 +164,7 @@ public class RiposteClient implements ClientModInitializer {
 			double px = buf.readDouble();
 			double py = buf.readDouble();
 			double pz = buf.readDouble();
-			float yaw = buf.readFloat(); // FIX: server writes this float before the booleans - must be consumed to stay in sync
+			float yaw = buf.readFloat();
 			boolean isWeapon = buf.readBoolean();
 			boolean isHeavyDamage = buf.readBoolean();
 
@@ -602,7 +602,6 @@ public class RiposteClient implements ClientModInitializer {
 			if (animationContainer != null) {
 				animationContainer.setAnimation(null);
 				var keyframePlayer = new KeyframeAnimationPlayer(animation);
-				keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
 
 				boolean isKick = animName.contains("kick_hit");
 				boolean isWeaponAnim = animName.contains("weapon");
@@ -612,7 +611,14 @@ public class RiposteClient implements ClientModInitializer {
 				boolean showLeft = isKick || isWeaponAnim || isFall || isFinisher || animName.contains("execute");
 				renderLeftArm = showLeft;
 
-				keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, showLeft, true, showLeft));
+				if (CLIENT_CONFIG.firstPersonAnimations) {
+					keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
+					keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, showLeft, true, showLeft));
+				} else {
+					keyframePlayer.setFirstPersonMode(FirstPersonMode.NONE);
+					keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(false, false, false, false));
+				}
+
 				animationContainer.setAnimation(keyframePlayer);
 			}
 		}

@@ -48,7 +48,6 @@ public abstract class CameraMixin {
         ParryData data = (ParryData) client.player;
         long timeSinceParry = System.currentTimeMillis() - data.getSuccessfulParryTimestamp();
 
-        // --- NEW: MERGED RECOIL ---
         long timeSinceFinisherRecoil = System.currentTimeMillis() - RiposteClient.finisherRecoilTimestamp;
         long timeSince = Math.min(timeSinceParry, timeSinceFinisherRecoil);
 
@@ -117,7 +116,8 @@ public abstract class CameraMixin {
                         this.riposte$smoothAnimYaw = MathHelper.lerpAngleDegrees(0.08f, this.riposte$smoothAnimYaw, targetAnimYaw);
 
                         finalPitchOffset += this.riposte$smoothAnimPitch;
-                        finalYawOffset -= this.riposte$smoothAnimYaw;
+                        // CHANGED: Use += instead of -= to correctly mirror the animation's yaw rotation
+                        finalYawOffset += this.riposte$smoothAnimYaw;
                     }
                 }
 

@@ -10,7 +10,8 @@
 		"PlayerEntityModelMixin",
 		"HeldItemRendererMixin",
 		"AbstractClientPlayerEntityMixin",
-		"MouseMixin"
+		"MouseMixin",
+		"ArmorFeatureRendererMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -1,7 +1,7 @@
 {
   "id": "riposte:medium_fist",
   "animation_id": "medium_fist_finisher",
-  "target_size": "MEDIUM",
+  "target_size": "ALL",
   "requires_grounded": false,
   "weapon_requirement": "FIST",
   "total_duration_ticks": 34,

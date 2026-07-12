@@ -30,12 +30,10 @@ public class HeldItemRendererMixin {
 
             if (animationContainer != null && animationContainer.isActive()) {
 
-                Vec3f rotation = animationContainer.get3DTransform("right_arm", TransformType.ROTATION, tickDelta, new Vec3f(0, 0, 0));
-                Vec3f position = animationContainer.get3DTransform("right_arm", TransformType.POSITION, tickDelta, new Vec3f(0, 0, 0));
-
+                Vec3f rotation = animationContainer.get3DTransform("rightArm", TransformType.ROTATION, tickDelta, new Vec3f(0, 0, 0));
+                Vec3f position = animationContainer.get3DTransform("rightArm", TransformType.POSITION, tickDelta, new Vec3f(0, 0, 0));
 
                 matrices.translate(0.0, -0.5, 0.0);
-
 
                 matrices.multiply(RotationAxis.POSITIVE_Z.rotation(rotation.getZ()));
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotation(rotation.getY()));
@@ -43,8 +41,8 @@ public class HeldItemRendererMixin {
 
                 matrices.translate(position.getX() / 16.0, position.getY() / 16.0, position.getZ() / 16.0);
 
-                Vec3f itemRotation = animationContainer.get3DTransform("right_item", TransformType.ROTATION, tickDelta, new Vec3f(0, 0, 0));
-                Vec3f itemPosition = animationContainer.get3DTransform("right_item", TransformType.POSITION, tickDelta, new Vec3f(0, 0, 0));
+                Vec3f itemRotation = animationContainer.get3DTransform("rightItem", TransformType.ROTATION, tickDelta, new Vec3f(0, 0, 0));
+                Vec3f itemPosition = animationContainer.get3DTransform("rightItem", TransformType.POSITION, tickDelta, new Vec3f(0, 0, 0));
 
                 matrices.multiply(RotationAxis.POSITIVE_Z.rotation(itemRotation.getZ()));
                 matrices.multiply(RotationAxis.POSITIVE_Y.rotation(itemRotation.getY()));
