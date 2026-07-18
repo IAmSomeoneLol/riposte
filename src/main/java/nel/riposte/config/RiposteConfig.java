@@ -1,7 +1,6 @@
 package nel.riposte.config;
 
 import me.fzzyhmstrs.fzzy_config.config.Config;
-import me.fzzyhmstrs.fzzy_config.config.ConfigGroup;
 import me.fzzyhmstrs.fzzy_config.config.ConfigSection;
 import net.minecraft.util.Identifier;
 import nel.riposte.Riposte;
@@ -18,24 +17,23 @@ public class RiposteConfig extends Config {
     public enum FinisherTrigger { KICK_COMBO, NORMAL_PARRY, BOTH }
     public enum FinisherRestrictionMode { WHITELIST, BLACKLIST, DISABLED }
 
-    public ConfigGroup parrySettingsGroup = new ConfigGroup("parrySettings");
+    // Grouping is now handled by the UI automatically or via ConfigSections.
+    // We remove the ConfigGroup objects and @Pop annotations to fix the compile error.
+
     public int parryWindowMs = 175;
     public int parryCooldownMs = 10000;
     public double parryKnockback = 0.5;
     public boolean allowParryWhileUsingItem = false;
     public boolean enableSuccessParryRecharge = true;
-    public double globalParryCooldownRecharge = 0.15; // 30%
-    @ConfigGroup.Pop
+    public double globalParryCooldownRecharge = 0.15; // 15%
     public boolean enforceKnockback = true;
 
-    public ConfigGroup parryAdaptionsGroup = new ConfigGroup("parryAdaptions");
     public boolean hitstop = true;
     public int hitstopMs = 45;
     public boolean deflectProjectiles = true;
     public boolean kickCombo = true;
     public double kickComboKnockbackMultiplier = 1.5;
     public int kickComboWindowMs = 550;
-    @ConfigGroup.Pop
     public boolean allowMultiParry = false;
 
     public Accessories accessories = new Accessories();
