@@ -17,9 +17,6 @@ public class RiposteConfig extends Config {
     public enum FinisherTrigger { KICK_COMBO, NORMAL_PARRY, BOTH }
     public enum FinisherRestrictionMode { WHITELIST, BLACKLIST, DISABLED }
 
-    // Grouping is now handled by the UI automatically or via ConfigSections.
-    // We remove the ConfigGroup objects and @Pop annotations to fix the compile error.
-
     public int parryWindowMs = 175;
     public int parryCooldownMs = 10000;
     public double parryKnockback = 0.5;

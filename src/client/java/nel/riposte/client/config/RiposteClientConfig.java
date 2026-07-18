@@ -23,7 +23,7 @@ public class RiposteClientConfig extends Config {
     public ExecutionMode parryActivation = ExecutionMode.KEYBIND;
     public boolean firstPersonAnimations = true;
 
-    // We keep the variables but remove the ConfigGroup objects
+
     public AnchorPoint iconAnchor = AnchorPoint.BOTTOM_CENTER;
     public IconMode iconMode = IconMode.STATIC;
     public int xOffset = 100;
