@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 }
 
@@ -20,6 +20,10 @@ repositories {
 	maven {
 		name = "Ladysnake"
 		url = "https://maven.ladysnake.org/releases"
+	}
+	maven {
+		name = "Nucleoid"
+		url = "https://maven.nucleoid.xyz/"
 	}
 }
 
