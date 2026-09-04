@@ -29,7 +29,7 @@ public class HeldItemRendererMixin {
 
         if (player == MinecraftClient.getInstance().player && hand == Hand.MAIN_HAND) {
             var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player)
-                    .get(new Identifier(Riposte.MOD_ID, "animation"));
+                    .get(Identifier.of(Riposte.MOD_ID, "animation"));
 
             if (animationContainer != null && animationContainer.isActive()) {
 

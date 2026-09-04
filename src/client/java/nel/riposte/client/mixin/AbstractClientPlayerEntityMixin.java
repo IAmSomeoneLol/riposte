@@ -16,7 +16,7 @@ public class AbstractClientPlayerEntityMixin {
     private void riposte$lockBodyYaw(CallbackInfo ci) {
         AbstractClientPlayerEntity player = (AbstractClientPlayerEntity) (Object) this;
 
-        var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
+        var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(Identifier.of(Riposte.MOD_ID, "animation"));
 
         if (animationContainer != null && animationContainer.isActive()) {
             player.bodyYaw = player.headYaw;

@@ -7,6 +7,7 @@ import dev.emi.trinkets.api.TrinketsApi;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonMode;
 import dev.kosmx.playerAnim.api.firstPerson.FirstPersonConfiguration;
 import dev.kosmx.playerAnim.api.layered.IAnimation;
+import dev.kosmx.playerAnim.core.data.KeyframeAnimation;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
 import me.fzzyhmstrs.fzzy_config.api.RegisterType;
 import nel.riposte.FinisherData;
@@ -17,6 +18,7 @@ import nel.riposte.Riposte;
 import nel.riposte.client.config.RiposteClientConfig;
 import nel.riposte.client.mixin.GameRendererInvoker;
 import nel.riposte.client.particle.ParryTrailParticle;
+import nel.riposte.network.RipostePackets;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -25,7 +27,6 @@ import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.MinecraftClient;
@@ -39,11 +40,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.MiningToolItem;
 import net.minecraft.item.TridentItem;
-import net.minecraft.particle.DefaultParticleType;
+import net.minecraft.particle.SimpleParticleType;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
-import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -57,7 +57,6 @@ import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationFactory;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.network.PacketByteBuf;
 import org.joml.Matrix4f;
 
 import java.util.Random;
@@ -72,13 +71,13 @@ public class RiposteClient implements ClientModInitializer {
 	public static RiposteClientConfig CLIENT_CONFIG;
 	private static final Random random = new Random();
 
-	private static final Identifier PARRY_ICON_FULL = new Identifier(Riposte.MOD_ID, "textures/gui/cooldown_parry.png");
-	private static final Identifier PARRY_ICON_EMPTY = new Identifier(Riposte.MOD_ID, "textures/gui/cooldown_parry_empty.png");
-	private static final Identifier PARRY_ICON_CHARGING = new Identifier(Riposte.MOD_ID, "textures/gui/cooldown_parry_charging.png");
+	private static final Identifier PARRY_ICON_FULL = Identifier.of(Riposte.MOD_ID, "textures/gui/cooldown_parry.png");
+	private static final Identifier PARRY_ICON_EMPTY = Identifier.of(Riposte.MOD_ID, "textures/gui/cooldown_parry_empty.png");
+	private static final Identifier PARRY_ICON_CHARGING = Identifier.of(Riposte.MOD_ID, "textures/gui/cooldown_parry_charging.png");
 
-	private static final Identifier FINISHER_PROMPT_BG = new Identifier(Riposte.MOD_ID, "textures/gui/finisher_prompt.png");
+	private static final Identifier FINISHER_PROMPT_BG = Identifier.of(Riposte.MOD_ID, "textures/gui/finisher_prompt.png");
 
-	private static final Identifier CHARGE_SOUND_ID = new Identifier(Riposte.MOD_ID, "cooldown_charge_finish");
+	private static final Identifier CHARGE_SOUND_ID = Identifier.of(Riposte.MOD_ID, "cooldown_charge_finish");
 	private static final SoundEvent CHARGE_SOUND = SoundEvent.of(CHARGE_SOUND_ID);
 	private static boolean wasCharging = false;
 
@@ -115,10 +114,9 @@ public class RiposteClient implements ClientModInitializer {
 
 		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new, RegisterType.CLIENT);
 
-		@SuppressWarnings("unchecked")
 		var p1 = ParticleFactoryRegistry.getInstance();
-		p1.register(Riposte.PARRY_TRAIL, provider -> new ParryTrailParticle.HeavyFactory(provider));
-		p1.register(Riposte.PARRY_TRAIL_LIGHT, provider -> new ParryTrailParticle.LightFactory(provider));
+		p1.register(Riposte.PARRY_TRAIL, ParryTrailParticle.HeavyFactory::new);
+		p1.register(Riposte.PARRY_TRAIL_LIGHT, ParryTrailParticle.LightFactory::new);
 
 		parryKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
 				"key.riposte.parry",
@@ -135,7 +133,7 @@ public class RiposteClient implements ClientModInitializer {
 		));
 
 		PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(
-				new Identifier(Riposte.MOD_ID, "animation"),
+				Identifier.of(Riposte.MOD_ID, "animation"),
 				42,
 				(AbstractClientPlayerEntity player) -> new ModifierLayer<>()
 		);
@@ -154,7 +152,7 @@ public class RiposteClient implements ClientModInitializer {
 		ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
 			@Override
 			public Identifier getFabricId() {
-				return new Identifier(Riposte.MOD_ID, "icon_padding_calculator");
+				return Identifier.of(Riposte.MOD_ID, "icon_padding_calculator");
 			}
 			@Override
 			public void reload(ResourceManager manager) {
@@ -166,13 +164,15 @@ public class RiposteClient implements ClientModInitializer {
 			}
 		});
 
-		ClientPlayNetworking.registerGlobalReceiver(Riposte.FALL_PARRY_VFX_PACKET, (client, handler, buf, responseSender) -> {
-			double px = buf.readDouble();
-			double py = buf.readDouble();
-			double pz = buf.readDouble();
+		RipostePackets.registerS2C();
 
-			client.execute(() -> {
-				if (client.world == null) return;
+		ClientPlayNetworking.registerGlobalReceiver(RipostePackets.FallParryVfxPayload.ID, (payload, context) -> {
+			double px = payload.x();
+			double py = payload.y();
+			double pz = payload.z();
+
+			context.client().execute(() -> {
+				if (context.client().world == null) return;
 				if (CLIENT_CONFIG.particles.parryFallParticle) {
 					for (int i = 0; i < 36; i++) {
 						double angle = i * (Math.PI * 2 / 36.0);
@@ -181,35 +181,34 @@ public class RiposteClient implements ClientModInitializer {
 						double vx = Math.cos(angle) * 0.2;
 						double vy = 0.1;
 						double vz = Math.sin(angle) * 0.2;
-						client.world.addParticle(ParticleTypes.CLOUD, x, py + 0.2, z, vx, vy, vz);
-						client.world.addParticle(ParticleTypes.POOF, x, py + 0.2, z, vx, vy, vz);
+						context.client().world.addParticle(ParticleTypes.CLOUD, x, py + 0.2, z, vx, vy, vz);
+						context.client().world.addParticle(ParticleTypes.POOF, x, py + 0.2, z, vx, vy, vz);
 					}
 				}
 			});
 		});
 
-		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_VFX_PACKET, (client, handler, buf, responseSender) -> {
-			double px = buf.readDouble();
-			double py = buf.readDouble();
-			double pz = buf.readDouble();
-			float yaw = buf.readFloat();
-			boolean isWeapon = buf.readBoolean();
-			boolean isHeavyDamage = buf.readBoolean();
+		ClientPlayNetworking.registerGlobalReceiver(RipostePackets.ParryVfxPayload.ID, (payload, context) -> {
+			double px = payload.x();
+			double py = payload.y();
+			double pz = payload.z();
+			boolean isWeapon = payload.isWeapon();
+			boolean isHeavyDamage = payload.isHeavyDamage();
 
-			client.execute(() -> {
-				if (client.world == null) return;
+			context.client().execute(() -> {
+				if (context.client().world == null) return;
 				if (CLIENT_CONFIG.particles.particleNormal) {
 					for (int i = 0; i < CLIENT_CONFIG.particles.normalParticleCount; i++) {
-						client.world.addParticle(ParticleTypes.FIREWORK, px, py, pz,
+						context.client().world.addParticle(ParticleTypes.FIREWORK, px, py, pz,
 								random.nextGaussian() * CLIENT_CONFIG.particles.normalParticleVelocity,
 								random.nextGaussian() * CLIENT_CONFIG.particles.normalParticleVelocity,
 								random.nextGaussian() * CLIENT_CONFIG.particles.normalParticleVelocity);
 					}
 				}
 				if (isWeapon && CLIENT_CONFIG.particles.particleHeavy) {
-					DefaultParticleType trailType = isHeavyDamage ? Riposte.PARRY_TRAIL : Riposte.PARRY_TRAIL_LIGHT;
+					SimpleParticleType trailType = isHeavyDamage ? Riposte.PARRY_TRAIL : Riposte.PARRY_TRAIL_LIGHT;
 					for (int i = 0; i < CLIENT_CONFIG.particles.heavyParticleCount; i++) {
-						client.world.addParticle(trailType, px, py, pz,
+						context.client().world.addParticle(trailType, px, py, pz,
 								(random.nextDouble() - 0.5) * CLIENT_CONFIG.particles.heavyParticleVelocity,
 								(random.nextDouble() - 0.5) * CLIENT_CONFIG.particles.heavyParticleVelocity,
 								(random.nextDouble() - 0.5) * CLIENT_CONFIG.particles.heavyParticleVelocity);
@@ -218,35 +217,35 @@ public class RiposteClient implements ClientModInitializer {
 			});
 		});
 
-		ClientPlayNetworking.registerGlobalReceiver(Riposte.LETHAL_VFX_PACKET, (client, handler, buf, responseSender) -> {
-			client.execute(() -> {
+		ClientPlayNetworking.registerGlobalReceiver(RipostePackets.LethalVfxPayload.ID, (payload, context) -> {
+			context.client().execute(() -> {
 				lastLethalParryTimestamp = System.currentTimeMillis();
-				if (CLIENT_CONFIG.lethalParryShader && client.gameRenderer != null) {
-					((GameRendererInvoker) client.gameRenderer).invokeLoadPostProcessor(new Identifier(Riposte.MOD_ID, "shaders/post/lethal_parry.json"));
+				if (CLIENT_CONFIG.lethalParryShader && context.client().gameRenderer != null) {
+					((GameRendererInvoker) context.client().gameRenderer).invokeLoadPostProcessor(Identifier.of(Riposte.MOD_ID, "shaders/post/lethal_parry.json"));
 					shaderActive = true;
 				}
 			});
 		});
 
-		ClientPlayNetworking.registerGlobalReceiver(Riposte.SYNC_FINISHER_GAUGE_PACKET, (client, handler, buf, responseSender) -> {
-			int targetId = buf.readInt();
-			float gauge = buf.readFloat();
-			int parryCount = buf.readInt();
+		ClientPlayNetworking.registerGlobalReceiver(RipostePackets.SyncFinisherGaugePayload.ID, (payload, context) -> {
+			int targetId = payload.targetId();
+			float gauge = payload.gauge();
+			int parryCount = payload.parryCount();
 
-			client.execute(() -> {
-				if (client.player != null) {
-					FinisherData fData = (FinisherData) client.player;
+			context.client().execute(() -> {
+				if (context.client().player != null) {
+					FinisherData fData = (FinisherData) context.client().player;
 					fData.setFinisherGauge(targetId, gauge);
 					fData.setParryCount(targetId, parryCount);
 				}
 			});
 		});
 
-		ClientPlayNetworking.registerGlobalReceiver(Riposte.PARRY_SUCCESS_PACKET, (client, handler, buf, responseSender) -> {
-			boolean isFallParry = buf.readBoolean();
-			client.execute(() -> {
-				if (client.player != null) {
-					ParryData data = (ParryData) client.player;
+		ClientPlayNetworking.registerGlobalReceiver(RipostePackets.ParrySuccessPayload.ID, (payload, context) -> {
+			boolean isFallParry = payload.isFallParry();
+			context.client().execute(() -> {
+				if (context.client().player != null) {
+					ParryData data = (ParryData) context.client().player;
 					long now = System.currentTimeMillis();
 					data.setSuccessfulParryTimestamp(now);
 					lastParryWasFall = isFallParry;
@@ -255,7 +254,7 @@ public class RiposteClient implements ClientModInitializer {
 					if (Riposte.CONFIG.enableSuccessParryRecharge) {
 						data.refundParryCooldown((float) Riposte.CONFIG.globalParryCooldownRecharge);
 					}
-					var component = TrinketsApi.getTrinketComponent(client.player).orElse(null);
+					var component = TrinketsApi.getTrinketComponent(context.client().player).orElse(null);
 					if (component != null && component.isEquipped(Riposte.HONORABLE_CAPE)) {
 						data.refundParryCooldown((float) Riposte.CONFIG.accessories.honorableCape.cooldownCharge);
 					}
@@ -263,47 +262,47 @@ public class RiposteClient implements ClientModInitializer {
 					String animName;
 					if (isFallParry) animName = "parry_fall_damage";
 					else {
-						ItemStack stack = client.player.getMainHandStack();
+						ItemStack stack = context.client().player.getMainHandStack();
 						boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
 						animName = isWeapon ? new String[]{"parry_weapon", "parry_weapon1", "parry_weapon2", "parry_weapon3"}[random.nextInt(4)] : new String[]{"parry_fist", "parry_fist1", "parry_fist2"}[random.nextInt(3)];
 					}
-					playFirstPersonAnimation((AbstractClientPlayerEntity) client.player, animName);
+					playFirstPersonAnimation((AbstractClientPlayerEntity) context.client().player, animName);
 				}
 			});
 		});
 
-		ClientPlayNetworking.registerGlobalReceiver(Riposte.COMBO_SUCCESS_PACKET, (client, handler, buf, responseSender) -> {
-			client.execute(() -> {
-				if (client.player != null) {
-					((ParryData) client.player).setSuccessfulComboTimestamp(System.currentTimeMillis());
+		ClientPlayNetworking.registerGlobalReceiver(RipostePackets.ComboSuccessPayload.ID, (payload, context) -> {
+			context.client().execute(() -> {
+				if (context.client().player != null) {
+					((ParryData) context.client().player).setSuccessfulComboTimestamp(System.currentTimeMillis());
 					lastParryWasFall = false;
-					ItemStack stack = client.player.getMainHandStack();
+					ItemStack stack = context.client().player.getMainHandStack();
 					boolean isWeapon = stack.getItem() instanceof SwordItem || stack.getItem() instanceof MiningToolItem || stack.getItem() instanceof TridentItem;
-					playFirstPersonAnimation((AbstractClientPlayerEntity) client.player, isWeapon ? "weapon_kick_hit" : "kick_hit");
+					playFirstPersonAnimation((AbstractClientPlayerEntity) context.client().player, isWeapon ? "weapon_kick_hit" : "kick_hit");
 				}
 			});
 		});
 
-		ClientPlayNetworking.registerGlobalReceiver(Riposte.START_FINISHER_ANIM_PACKET, (client, handler, buf, responseSender) -> {
-			UUID playerUuid = buf.readUuid();
-			int targetId = buf.readInt();
-			String finisherId = buf.readString();
+		ClientPlayNetworking.registerGlobalReceiver(RipostePackets.StartFinisherAnimPayload.ID, (payload, context) -> {
+			UUID playerUuid = payload.playerUuid();
+			int targetId = payload.targetId();
+			String finisherId = payload.finisherId();
 
-			client.execute(() -> {
-				if (client.world != null) {
-					PlayerEntity animPlayer = client.world.getPlayerByUuid(playerUuid);
+			context.client().execute(() -> {
+				if (context.client().world != null) {
+					PlayerEntity animPlayer = context.client().world.getPlayerByUuid(playerUuid);
 					if (animPlayer instanceof AbstractClientPlayerEntity clientPlayer) {
 
 						FinisherDefinition def = FinisherLoader.getFinisherById(finisherId);
 						if (def == null) return;
 
-						if (animPlayer == client.player) {
+						if (animPlayer == context.client().player) {
 							finisherStartTime = System.currentTimeMillis();
-							originalYaw = client.player.getYaw();
-							originalPitch = client.player.getPitch();
+							originalYaw = context.client().player.getYaw();
+							originalPitch = context.client().player.getPitch();
 							wasExecuting = true;
 
-							FinisherData fData = (FinisherData) client.player;
+							FinisherData fData = (FinisherData) context.client().player;
 							if (Riposte.CONFIG.addons.finishers.finisherMode == nel.riposte.config.RiposteConfig.FinisherMode.GAUGE_METER) {
 								fData.consumeFinisherGauge(targetId, 100f);
 							} else {
@@ -387,7 +386,7 @@ public class RiposteClient implements ClientModInitializer {
 					if (currentParryAnimation.equals("parry_fist_ready") || currentParryAnimation.equals("parry_weapon_ready")) {
 						if (client.options.attackKey.isPressed() || client.options.useKey.isPressed()) {
 							@SuppressWarnings("unchecked")
-							var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(client.player).get(new Identifier(Riposte.MOD_ID, "animation"));
+							var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(client.player).get(Identifier.of(Riposte.MOD_ID, "animation"));
 							if (animationContainer != null) {
 								animationContainer.setAnimation(null);
 								currentParryAnimation = "";
@@ -440,9 +439,7 @@ public class RiposteClient implements ClientModInitializer {
 					}
 
 					if (closestValid != null) {
-						PacketByteBuf buf = PacketByteBufs.create();
-						buf.writeInt(closestValid.getId());
-						ClientPlayNetworking.send(Riposte.EXECUTE_FINISHER_PACKET, buf);
+						ClientPlayNetworking.send(new RipostePackets.ExecuteFinisherPayload(closestValid.getId()));
 					}
 				}
 			}
@@ -464,6 +461,8 @@ public class RiposteClient implements ClientModInitializer {
 
 			Box box = client.player.getBoundingBox().expand(6.0);
 			Vec3d lookVec = client.player.getRotationVec(1.0F).normalize();
+
+			float tickDelta = context.tickCounter().getTickDelta(true);
 
 			for (Entity target : client.world.getEntitiesByClass(LivingEntity.class, box, e -> e != client.player)) {
 				if (client.player.distanceTo(target) > 6.0f) continue;
@@ -489,9 +488,9 @@ public class RiposteClient implements ClientModInitializer {
 						net.minecraft.client.util.math.MatrixStack matrices = context.matrixStack();
 						net.minecraft.client.render.Camera camera = context.camera();
 
-						double x = net.minecraft.util.math.MathHelper.lerp(context.tickDelta(), target.lastRenderX, target.getX()) - camera.getPos().x;
-						double y = net.minecraft.util.math.MathHelper.lerp(context.tickDelta(), target.lastRenderY, target.getY()) + (target.getHeight() * 0.6f) - camera.getPos().y;
-						double z = net.minecraft.util.math.MathHelper.lerp(context.tickDelta(), target.lastRenderZ, target.getZ()) - camera.getPos().z;
+						double x = net.minecraft.util.math.MathHelper.lerp(tickDelta, target.prevX, target.getX()) - camera.getPos().x;
+						double y = net.minecraft.util.math.MathHelper.lerp(tickDelta, target.prevY, target.getY()) + (target.getHeight() * 0.6f) - camera.getPos().y;
+						double z = net.minecraft.util.math.MathHelper.lerp(tickDelta, target.prevZ, target.getZ()) - camera.getPos().z;
 
 						matrices.push();
 						matrices.translate(x, y, z);
@@ -506,10 +505,11 @@ public class RiposteClient implements ClientModInitializer {
 						net.minecraft.client.render.VertexConsumer consumer = context.consumers().getBuffer(net.minecraft.client.render.RenderLayer.getTextSeeThrough(FINISHER_PROMPT_BG));
 						float texSize = 16f;
 
-						consumer.vertex(matrix4f, -texSize, -texSize, 0).color(255, 255, 255, 255).texture(0f, 0f).light(light).next();
-						consumer.vertex(matrix4f, -texSize, texSize, 0).color(255, 255, 255, 255).texture(0f, 1f).light(light).next();
-						consumer.vertex(matrix4f, texSize, texSize, 0).color(255, 255, 255, 255).texture(1f, 1f).light(light).next();
-						consumer.vertex(matrix4f, texSize, -texSize, 0).color(255, 255, 255, 255).texture(1f, 0f).light(light).next();
+						// 1.21 Fix: Remove .next() call, the chaining properties handle vertex submission automatically now
+						consumer.vertex(matrix4f, -texSize, -texSize, 0).color(255, 255, 255, 255).texture(0f, 0f).light(light);
+						consumer.vertex(matrix4f, -texSize, texSize, 0).color(255, 255, 255, 255).texture(0f, 1f).light(light);
+						consumer.vertex(matrix4f, texSize, texSize, 0).color(255, 255, 255, 255).texture(1f, 1f).light(light);
+						consumer.vertex(matrix4f, texSize, -texSize, 0).color(255, 255, 255, 255).texture(1f, 0f).light(light);
 
 						matrices.push();
 						float textScale = CLIENT_CONFIG.addons.finishers.contextualButtonPromptTextScale;
@@ -528,7 +528,7 @@ public class RiposteClient implements ClientModInitializer {
 			}
 		});
 
-		HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
+		HudRenderCallback.EVENT.register((drawContext, tickCounter) -> {
 			MinecraftClient client = MinecraftClient.getInstance();
 			if (client.player == null) return;
 
@@ -617,7 +617,7 @@ public class RiposteClient implements ClientModInitializer {
 
 			if (data.canParry(currentCooldown)) {
 				data.setParryTimestamp(System.currentTimeMillis());
-				ClientPlayNetworking.send(Riposte.PARRY_SYNC_PACKET, PacketByteBufs.create());
+				ClientPlayNetworking.send(new RipostePackets.ParrySyncPayload());
 
 				lastParryWasFall = false;
 				ItemStack stack = client.player.getMainHandStack();
@@ -633,17 +633,18 @@ public class RiposteClient implements ClientModInitializer {
 	private static void playFirstPersonAnimation(AbstractClientPlayerEntity player, String requestedAnimName) {
 		String animName = requestedAnimName;
 		currentParryAnimation = animName;
-		var animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
+		var animation = PlayerAnimationRegistry.getAnimation(Identifier.of(Riposte.MOD_ID, animName));
 
 		if (animation == null && (animName.endsWith("1") || animName.endsWith("2") || animName.endsWith("3"))) {
 			animName = animName.substring(0, animName.length() - 1);
-			animation = PlayerAnimationRegistry.getAnimation(new Identifier(Riposte.MOD_ID, animName));
+			animation = PlayerAnimationRegistry.getAnimation(Identifier.of(Riposte.MOD_ID, animName));
 		}
 
 		if (animation != null) {
-			var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
+			var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(Identifier.of(Riposte.MOD_ID, "animation"));
 			if (animationContainer != null) {
-				var keyframePlayer = new KeyframeAnimationPlayer(animation);
+				// 1.21 Fix: Player Animator 2.x returns IPlayable from the registry, so we cast it exactly to KeyframeAnimation.
+				var keyframePlayer = new KeyframeAnimationPlayer((KeyframeAnimation) animation);
 
 				boolean isKick = animName.contains("kick_hit");
 				boolean isWeaponAnim = animName.contains("weapon");

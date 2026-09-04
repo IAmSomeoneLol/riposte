@@ -28,10 +28,10 @@ public abstract class FovMixin {
                 float snapTime = 40.0f;
 
                 if (timeSince <= snapTime) {
-                    // Match the camera's Sine Ease-Out
+                    // Ease
                     intensity = (float) Math.sin((timeSince / snapTime) * (Math.PI / 2.0));
                 } else {
-                    // Match the camera's Cubic Ease-Out
+                    // Ease
                     float progress = (timeSince - snapTime) / (totalDuration - snapTime);
                     intensity = (float) Math.pow(1.0f - progress, 3);
                 }

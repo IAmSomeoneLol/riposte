@@ -24,7 +24,8 @@ import java.util.Random;
 @Mixin(Camera.class)
 public abstract class CameraMixin {
 
-    @Shadow protected abstract void moveBy(double x, double y, double z);
+    // 1.21 Fix: moveBy now takes floats instead of doubles
+    @Shadow protected abstract void moveBy(float x, float y, float z);
     @Shadow protected abstract void setRotation(float yaw, float pitch);
     @Shadow private float pitch;
     @Shadow private float yaw;
@@ -105,7 +106,7 @@ public abstract class CameraMixin {
                 FinisherDefinition def = FinisherLoader.getFinisherById(fData.getActiveFinisherId());
 
                 if (def != null && !def.disable_head_tracking) {
-                    var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
+                    var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(Identifier.of(Riposte.MOD_ID, "animation"));
                     if (animationContainer != null && animationContainer.isActive()) {
                         Vec3f headRot = animationContainer.get3DTransform("head", TransformType.ROTATION, tickDelta, new Vec3f(0, 0, 0));
 
@@ -116,7 +117,6 @@ public abstract class CameraMixin {
                         this.riposte$smoothAnimYaw = MathHelper.lerpAngleDegrees(0.08f, this.riposte$smoothAnimYaw, targetAnimYaw);
 
                         finalPitchOffset += this.riposte$smoothAnimPitch;
-                        // CHANGED: Use += instead of -= to correctly mirror the animation's yaw rotation
                         finalYawOffset += this.riposte$smoothAnimYaw;
                     }
                 }

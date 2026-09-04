@@ -7,7 +7,7 @@ import nel.riposte.FinisherLoader;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
 import nel.riposte.config.RiposteConfig;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import nel.riposte.network.RipostePackets;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.block.Blocks;
@@ -16,7 +16,6 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -26,9 +25,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.MiningToolItem;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.TridentItem;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.particle.BlockStateParticleEffect;
-import net.minecraft.particle.DefaultParticleType;
+import net.minecraft.particle.SimpleParticleType;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -60,10 +58,10 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
     @Unique private int lastParriedEntityId = -1;
 
     @Unique private int leatherSockTicks = 0;
-    @Unique private static final UUID LEATHER_SOCK_SPEED_UUID = UUID.fromString("b5b8d810-761e-45fa-8eb8-4dc4eb6b871c");
+    @Unique private static final Identifier LEATHER_SOCK_SPEED_ID = Identifier.of(Riposte.MOD_ID, "leather_sock_speed");
 
     @Unique private int riposte$shulkerAttackSpeedTicks = 0;
-    @Unique private static final UUID SHULKER_ATTACK_SPEED_UUID = UUID.fromString("e5c3c0a1-7b0b-4b2a-8c1a-2d3b4a5b6c7d");
+    @Unique private static final Identifier SHULKER_ATTACK_SPEED_ID = Identifier.of(Riposte.MOD_ID, "shulker_attack_speed");
 
     @Unique private boolean riposte$isExecutingFinisher = false;
     @Unique private int riposte$finisherTargetId = -1;
@@ -160,18 +158,10 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
 
         if (!player.getWorld().isClient) {
             for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
-                PacketByteBuf buf = PacketByteBufs.create();
-                buf.writeUuid(player.getUuid());
-                buf.writeInt(targetId);
-                buf.writeString(finisherId);
-                ServerPlayNetworking.send(tracker, Riposte.START_FINISHER_ANIM_PACKET, buf);
+                ServerPlayNetworking.send(tracker, new RipostePackets.StartFinisherAnimPayload(player.getUuid(), targetId, finisherId));
             }
             if (player instanceof ServerPlayerEntity serverPlayer) {
-                PacketByteBuf buf = PacketByteBufs.create();
-                buf.writeUuid(player.getUuid());
-                buf.writeInt(targetId);
-                buf.writeString(finisherId);
-                ServerPlayNetworking.send(serverPlayer, Riposte.START_FINISHER_ANIM_PACKET, buf);
+                ServerPlayNetworking.send(serverPlayer, new RipostePackets.StartFinisherAnimPayload(player.getUuid(), targetId, finisherId));
             }
         }
     }
@@ -325,7 +315,7 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                                     }
 
                                     if (targetSound != null) {
-                                        SoundEvent sound = Registries.SOUND_EVENT.get(new Identifier(targetSound));
+                                        SoundEvent sound = Registries.SOUND_EVENT.get(Identifier.of(targetSound));
                                         if (sound != null) {
                                             float randomPitch = 1.0f + (player.getWorld().random.nextFloat() - 0.5f) * 0.4f;
                                             player.getWorld().playSound(null, target.getX(), target.getY(), target.getZ(), sound, SoundCategory.PLAYERS, 1.0f, randomPitch);
@@ -386,7 +376,7 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                                 }
 
                                 else if ("particle".equals(event.action) && event.value != null) {
-                                    DefaultParticleType pType = (DefaultParticleType) Registries.PARTICLE_TYPE.get(new Identifier(event.value));
+                                    SimpleParticleType pType = (SimpleParticleType) Registries.PARTICLE_TYPE.get(Identifier.of(event.value));
                                     if (pType != null && player.getWorld() instanceof ServerWorld sw) {
                                         sw.spawnParticles(pType, target.getX() + event.x_offset, target.getY() + target.getHeight() * 0.5 + event.y_offset, target.getZ() + event.z_offset, event.count == 0 ? 10 : event.count, 0.2, 0.2, 0.2, 0.15);
                                     }
@@ -413,12 +403,12 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
             if (speedAttr != null) {
                 if (this.leatherSockTicks > 0) {
                     this.leatherSockTicks--;
-                    if (speedAttr.getModifier(LEATHER_SOCK_SPEED_UUID) == null) {
-                        speedAttr.addTemporaryModifier(new EntityAttributeModifier(LEATHER_SOCK_SPEED_UUID, "Leather Sock Speed", Riposte.CONFIG.accessories.leatherSocks.speedMultiplier, EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
+                    if (speedAttr.getModifier(LEATHER_SOCK_SPEED_ID) == null) {
+                        speedAttr.addTemporaryModifier(new EntityAttributeModifier(LEATHER_SOCK_SPEED_ID, Riposte.CONFIG.accessories.leatherSocks.speedMultiplier, EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
                     }
                 } else {
-                    if (speedAttr.getModifier(LEATHER_SOCK_SPEED_UUID) != null) {
-                        speedAttr.removeModifier(LEATHER_SOCK_SPEED_UUID);
+                    if (speedAttr.getModifier(LEATHER_SOCK_SPEED_ID) != null) {
+                        speedAttr.removeModifier(LEATHER_SOCK_SPEED_ID);
                     }
                 }
             }
@@ -427,12 +417,12 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
             if (attackSpeedAttr != null) {
                 if (this.riposte$shulkerAttackSpeedTicks > 0) {
                     this.riposte$shulkerAttackSpeedTicks--;
-                    if (attackSpeedAttr.getModifier(SHULKER_ATTACK_SPEED_UUID) == null) {
-                        attackSpeedAttr.addTemporaryModifier(new EntityAttributeModifier(SHULKER_ATTACK_SPEED_UUID, "Shulker Attack Speed", Riposte.CONFIG.accessories.shulkerHeadPlate.attackSpeedBoost, EntityAttributeModifier.Operation.MULTIPLY_TOTAL));
+                    if (attackSpeedAttr.getModifier(SHULKER_ATTACK_SPEED_ID) == null) {
+                        attackSpeedAttr.addTemporaryModifier(new EntityAttributeModifier(SHULKER_ATTACK_SPEED_ID, Riposte.CONFIG.accessories.shulkerHeadPlate.attackSpeedBoost, EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
                     }
                 } else {
-                    if (attackSpeedAttr.getModifier(SHULKER_ATTACK_SPEED_UUID) != null) {
-                        attackSpeedAttr.removeModifier(SHULKER_ATTACK_SPEED_UUID);
+                    if (attackSpeedAttr.getModifier(SHULKER_ATTACK_SPEED_ID) != null) {
+                        attackSpeedAttr.removeModifier(SHULKER_ATTACK_SPEED_ID);
                     }
                 }
             }
@@ -485,7 +475,7 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
 
                 Entity originalOwner = projectile.getOwner();
 
-                // NATIVE TRACKING: Appends vanilla command tags (scoreboard tags) safely
+                // Tracking
                 if (originalOwner instanceof net.minecraft.entity.mob.AbstractSkeletonEntity) {
                     projectile.addCommandTag("riposte_from_skeleton");
                 }
@@ -505,11 +495,7 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                     projectile.setVelocity(lookDir.x, lookDir.y, lookDir.z, (float) speed * 1.5f, 0.0f);
                 }
 
-                if (projectile instanceof ExplosiveProjectileEntity explosive) {
-                    explosive.powerX = lookDir.x * 0.1;
-                    explosive.powerY = lookDir.y * 0.1;
-                    explosive.powerZ = lookDir.z * 0.1;
-                }
+                // 1.21 Fix: Explosive properties removed completely from mixin because setting velocity handles it automatically in 1.21
 
                 projectile.velocityModified = true;
 
@@ -541,24 +527,10 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                     double midZ = player.getZ() + (lookDir.z * 1.2);
 
                     for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
-                        PacketByteBuf buf = PacketByteBufs.create();
-                        buf.writeDouble(midX);
-                        buf.writeDouble(midY);
-                        buf.writeDouble(midZ);
-                        buf.writeFloat(player.getYaw());
-                        buf.writeBoolean(isWeapon);
-                        buf.writeBoolean(isHeavyDamage);
-                        ServerPlayNetworking.send(tracker, Riposte.PARRY_VFX_PACKET, buf);
+                        ServerPlayNetworking.send(tracker, new RipostePackets.ParryVfxPayload(midX, midY, midZ, player.getYaw(), isWeapon, isHeavyDamage));
                     }
                     if (player instanceof ServerPlayerEntity serverPlayer) {
-                        PacketByteBuf buf = PacketByteBufs.create();
-                        buf.writeDouble(midX);
-                        buf.writeDouble(midY);
-                        buf.writeDouble(midZ);
-                        buf.writeFloat(player.getYaw());
-                        buf.writeBoolean(isWeapon);
-                        buf.writeBoolean(isHeavyDamage);
-                        ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_VFX_PACKET, buf);
+                        ServerPlayNetworking.send(serverPlayer, new RipostePackets.ParryVfxPayload(midX, midY, midZ, player.getYaw(), isWeapon, isHeavyDamage));
                     }
                 }
 
@@ -574,11 +546,7 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                 }
 
                 if (player instanceof ServerPlayerEntity serverPlayer) {
-                    PacketByteBuf successBuf = PacketByteBufs.create();
-                    successBuf.writeBoolean(false);
-                    successBuf.writeInt(originalOwner != null ? originalOwner.getId() : -1);
-                    successBuf.writeFloat(((FinisherData) player).getFinisherGauge(originalOwner != null ? originalOwner.getId() : -1));
-                    ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, successBuf);
+                    ServerPlayNetworking.send(serverPlayer, new RipostePackets.ParrySuccessPayload(false, originalOwner != null ? originalOwner.getId() : -1, ((FinisherData) player).getFinisherGauge(originalOwner != null ? originalOwner.getId() : -1)));
                 }
             }
         }
@@ -604,11 +572,7 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                             }
 
                             if (player instanceof ServerPlayerEntity serverPlayer) {
-                                PacketByteBuf syncBuf = PacketByteBufs.create();
-                                syncBuf.writeInt(victimId);
-                                syncBuf.writeFloat(fData.getFinisherGauge(victimId));
-                                syncBuf.writeInt(fData.getParryCount(victimId));
-                                ServerPlayNetworking.send(serverPlayer, Riposte.SYNC_FINISHER_GAUGE_PACKET, syncBuf);
+                                ServerPlayNetworking.send(serverPlayer, new RipostePackets.SyncFinisherGaugePayload(victimId, fData.getFinisherGauge(victimId), fData.getParryCount(victimId)));
                             }
                         }
                     }
@@ -634,7 +598,7 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                     player.getWorld().playSound(null, player.getBlockPos(), Riposte.KICK_COMBO_SOUND, SoundCategory.PLAYERS, 1.0f, randomPitch);
 
                     if (player instanceof ServerPlayerEntity serverPlayer) {
-                        ServerPlayNetworking.send(serverPlayer, Riposte.COMBO_SUCCESS_PACKET, PacketByteBufs.create());
+                        ServerPlayNetworking.send(serverPlayer, new RipostePackets.ComboSuccessPayload());
                     }
                 }
             }

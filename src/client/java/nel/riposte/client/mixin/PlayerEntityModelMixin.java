@@ -22,7 +22,7 @@ public class PlayerEntityModelMixin {
     private void riposte$handleParryAnimations(LivingEntity entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch, CallbackInfo ci) {
 
         if (entity instanceof AbstractClientPlayerEntity player) {
-            var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
+            var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(Identifier.of(Riposte.MOD_ID, "animation"));
             PlayerEntityModel<?> model = (PlayerEntityModel<?>) (Object) this;
 
             MinecraftClient client = MinecraftClient.getInstance();
@@ -49,7 +49,6 @@ public class PlayerEntityModelMixin {
                     }
                 }
 
-                // If FPM is enabled, we NEVER manually hide the body. FPM does it natively.
                 if (isFirstPerson && !isFpm && !inInventory) {
                     model.head.visible = false;
                     model.hat.visible = false;
@@ -68,12 +67,7 @@ public class PlayerEntityModelMixin {
             } else {
                 RiposteClient.currentParryAnimation = "";
 
-                // =========================================================================
-                // THE ULTIMATE FLICKER FIX:
-                // Only restore visibility if we are in Third-Person or inside an Inventory.
-                // If we are in First-Person, we MUST leave it alone so Better Combat / PlayerAnimator
-                // can keep the head safely hidden during their attacks!
-                // =========================================================================
+                // Visibility
                 if (!isFirstPerson || inInventory) {
                     model.head.visible = true;
                     model.hat.visible = true;
@@ -90,9 +84,7 @@ public class PlayerEntityModelMixin {
                 }
             }
 
-            // ============================================
-            // 🎬 THE MATHEMATICAL ANIMATION BLENDER
-            // ============================================
+            // Blender
             long now = System.currentTimeMillis();
 
             if (isAnimationActive && !state.wasActive) {

@@ -40,7 +40,7 @@ public class MouseMixin {
 
             Entity target = client.world.getEntityById(fData.getFinisherTargetId());
             if (target != null) {
-                float tickDelta = client.getTickDelta();
+                float tickDelta = client.getRenderTickCounter().getTickDelta(true);
 
                 double targetX = MathHelper.lerp(tickDelta, target.prevX, target.getX());
                 double targetY = MathHelper.lerp(tickDelta, target.prevY, target.getY()) + target.getEyeHeight(target.getPose());
@@ -58,7 +58,7 @@ public class MouseMixin {
                 float rawTargetYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
                 float rawTargetPitch = (float) Math.toDegrees(Math.atan2(-dy, dh));
 
-                // EXTRA HEAVY SMOOTHING: Dropped from 0.15 to 0.04 to entirely eliminate target damage jitter
+                // Smoothing
                 if (!riposte$hasInitializedTarget) {
                     riposte$smoothTargetYaw = rawTargetYaw;
                     riposte$smoothTargetPitch = rawTargetPitch;

@@ -11,7 +11,7 @@ import java.util.List;
 public class RiposteConfig extends Config {
 
     public RiposteConfig() {
-        super(new Identifier(Riposte.MOD_ID, "main"));
+        super(Identifier.of(Riposte.MOD_ID, "main"));
     }
 
     public enum FinisherMode { GAUGE_METER, PARRY_COUNT }

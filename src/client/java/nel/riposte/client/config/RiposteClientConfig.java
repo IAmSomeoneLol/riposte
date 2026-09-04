@@ -9,7 +9,7 @@ import net.minecraft.util.Identifier;
 public class RiposteClientConfig extends Config {
 
     public RiposteClientConfig() {
-        super(new Identifier(Riposte.MOD_ID, "client"));
+        super(Identifier.of(Riposte.MOD_ID, "client"));
     }
 
     public enum ExecutionMode { KEYBIND, CAMERA }

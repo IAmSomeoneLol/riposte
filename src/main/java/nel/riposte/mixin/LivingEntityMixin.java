@@ -6,7 +6,7 @@ import nel.riposte.HitstopData;
 import nel.riposte.ParryData;
 import nel.riposte.Riposte;
 import nel.riposte.config.RiposteConfig;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import nel.riposte.network.RipostePackets;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.entity.Entity;
@@ -25,7 +25,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.MiningToolItem;
 import net.minecraft.item.SwordItem;
 import net.minecraft.item.TridentItem;
-import net.minecraft.network.PacketByteBuf;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -123,7 +122,8 @@ public abstract class LivingEntityMixin implements HitstopData {
             ParryData parryData = (ParryData) player;
             int currentWindow = parryData.getCalculatedWindow(Riposte.CONFIG.parryWindowMs);
 
-            if (effect != null && effect.getEffectType().getCategory() == StatusEffectCategory.HARMFUL) {
+            // 1.21 Fix: Use .value() to get the Category from RegistryEntry
+            if (effect != null && effect.getEffectType().value().getCategory() == StatusEffectCategory.HARMFUL) {
                 if (parryData.isParryActive(currentWindow)) {
                     cir.setReturnValue(false);
                 }
@@ -193,11 +193,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                     }
 
                     if (playerAttacker instanceof ServerPlayerEntity serverPlayer) {
-                        PacketByteBuf syncBuf = PacketByteBufs.create();
-                        syncBuf.writeInt(victimId);
-                        syncBuf.writeFloat(fData.getFinisherGauge(victimId));
-                        syncBuf.writeInt(fData.getParryCount(victimId));
-                        ServerPlayNetworking.send(serverPlayer, Riposte.SYNC_FINISHER_GAUGE_PACKET, syncBuf);
+                        ServerPlayNetworking.send(serverPlayer, new RipostePackets.SyncFinisherGaugePayload(victimId, fData.getFinisherGauge(victimId), fData.getParryCount(victimId)));
                     }
                 }
             }
@@ -246,18 +242,10 @@ public abstract class LivingEntityMixin implements HitstopData {
 
                     if (!player.getWorld().isClient) {
                         for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
-                            PacketByteBuf vfxBuf = PacketByteBufs.create();
-                            vfxBuf.writeDouble(player.getX());
-                            vfxBuf.writeDouble(player.getY());
-                            vfxBuf.writeDouble(player.getZ());
-                            ServerPlayNetworking.send(tracker, Riposte.FALL_PARRY_VFX_PACKET, vfxBuf);
+                            ServerPlayNetworking.send(tracker, new RipostePackets.FallParryVfxPayload(player.getX(), player.getY(), player.getZ()));
                         }
                         if (player instanceof ServerPlayerEntity serverPlayer) {
-                            PacketByteBuf vfxBuf = PacketByteBufs.create();
-                            vfxBuf.writeDouble(player.getX());
-                            vfxBuf.writeDouble(player.getY());
-                            vfxBuf.writeDouble(player.getZ());
-                            ServerPlayNetworking.send(serverPlayer, Riposte.FALL_PARRY_VFX_PACKET, vfxBuf);
+                            ServerPlayNetworking.send(serverPlayer, new RipostePackets.FallParryVfxPayload(player.getX(), player.getY(), player.getZ()));
                         }
                     }
 
@@ -269,9 +257,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                     }
 
                     if (player instanceof ServerPlayerEntity serverPlayer) {
-                        PacketByteBuf buf = PacketByteBufs.create();
-                        buf.writeBoolean(true);
-                        ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, buf);
+                        ServerPlayNetworking.send(serverPlayer, new RipostePackets.ParrySuccessPayload(true, -1, 0f));
                     }
                     return;
                 }
@@ -321,11 +307,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                             }
 
                             if (player instanceof ServerPlayerEntity serverPlayer) {
-                                PacketByteBuf syncBuf = PacketByteBufs.create();
-                                syncBuf.writeInt(victimId);
-                                syncBuf.writeFloat(finisherData.getFinisherGauge(victimId));
-                                syncBuf.writeInt(finisherData.getParryCount(victimId));
-                                ServerPlayNetworking.send(serverPlayer, Riposte.SYNC_FINISHER_GAUGE_PACKET, syncBuf);
+                                ServerPlayNetworking.send(serverPlayer, new RipostePackets.SyncFinisherGaugePayload(victimId, finisherData.getFinisherGauge(victimId), finisherData.getParryCount(victimId)));
                             }
                         }
                     }
@@ -338,27 +320,13 @@ public abstract class LivingEntityMixin implements HitstopData {
                     double midZ = player.getZ() + (look.z * 1.2);
 
                     for (ServerPlayerEntity tracker : PlayerLookup.tracking(player)) {
-                        PacketByteBuf buf = PacketByteBufs.create();
-                        buf.writeDouble(midX);
-                        buf.writeDouble(midY);
-                        buf.writeDouble(midZ);
-                        buf.writeFloat(player.getYaw());
-                        buf.writeBoolean(isWeapon);
-                        buf.writeBoolean(isHeavyDamage);
-                        ServerPlayNetworking.send(tracker, Riposte.PARRY_VFX_PACKET, buf);
+                        ServerPlayNetworking.send(tracker, new RipostePackets.ParryVfxPayload(midX, midY, midZ, player.getYaw(), isWeapon, isHeavyDamage));
                     }
                     if (player instanceof ServerPlayerEntity serverPlayer) {
-                        PacketByteBuf buf = PacketByteBufs.create();
-                        buf.writeDouble(midX);
-                        buf.writeDouble(midY);
-                        buf.writeDouble(midZ);
-                        buf.writeFloat(player.getYaw());
-                        buf.writeBoolean(isWeapon);
-                        buf.writeBoolean(isHeavyDamage);
-                        ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_VFX_PACKET, buf);
+                        ServerPlayNetworking.send(serverPlayer, new RipostePackets.ParryVfxPayload(midX, midY, midZ, player.getYaw(), isWeapon, isHeavyDamage));
 
                         if (isLethal) {
-                            ServerPlayNetworking.send(serverPlayer, Riposte.LETHAL_VFX_PACKET, PacketByteBufs.create());
+                            ServerPlayNetworking.send(serverPlayer, new RipostePackets.LethalVfxPayload());
                         }
                     }
                 }
@@ -366,9 +334,7 @@ public abstract class LivingEntityMixin implements HitstopData {
                 parryData.setSuccessfulParryTimestamp(System.currentTimeMillis());
 
                 if (player instanceof ServerPlayerEntity serverPlayer) {
-                    PacketByteBuf buf = PacketByteBufs.create();
-                    buf.writeBoolean(false);
-                    ServerPlayNetworking.send(serverPlayer, Riposte.PARRY_SUCCESS_PACKET, buf);
+                    ServerPlayNetworking.send(serverPlayer, new RipostePackets.ParrySuccessPayload(false, rawAttacker != null ? rawAttacker.getId() : -1, ((FinisherData) player).getFinisherGauge(rawAttacker != null ? rawAttacker.getId() : -1)));
                 }
 
                 if (Riposte.CONFIG.enableSuccessParryRecharge) {
