@@ -20,9 +20,9 @@ public class RiposteClientConfig extends Config {
         CENTER_LEFT, CENTER, CENTER_RIGHT,
         BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT
     }
+    public enum AnimationMaskingMode { OFF, FULL, PARTIAL }
 
     public ExecutionMode parryActivation = ExecutionMode.KEYBIND;
-
     public boolean firstPersonAnimations = true;
 
     public ConfigGroup iconCooldownGroup = new ConfigGroup("iconCooldown");
@@ -68,11 +68,9 @@ public class RiposteClientConfig extends Config {
 
     public static class Particles extends ConfigSection {
         public boolean parryFallParticle = true;
-
         public boolean particleNormal = true;
         public int normalParticleCount = 25;
         public double normalParticleVelocity = 0.65;
-
         public boolean particleHeavy = true;
         public int heavyParticleCount = 30;
         public double heavyParticleVelocity = 3.5;
@@ -80,6 +78,7 @@ public class RiposteClientConfig extends Config {
 
     public static class Addons extends ConfigSection {
         public Finishers finishers = new Finishers();
+        public Experimental experimental = new Experimental();
     }
 
     public static class Finishers extends ConfigSection {
@@ -87,5 +86,9 @@ public class RiposteClientConfig extends Config {
         public float contextualButtonPromptTextScale = 2.5f;
         public boolean cameraLock = true;
         public long cameraCenterPanningDurationMs = 300;
+    }
+
+    public static class Experimental extends ConfigSection {
+        public AnimationMaskingMode animationMasking = AnimationMaskingMode.FULL;
     }
 }

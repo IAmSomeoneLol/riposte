@@ -1,10 +1,10 @@
 package nel.riposte.client.mixin;
 
 import dev.kosmx.playerAnim.api.TransformType;
-import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.core.util.Vec3f;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import nel.riposte.Riposte;
+import nel.riposte.client.compat.FPMCompat;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.VertexConsumerProvider;
@@ -22,8 +22,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(HeldItemRenderer.class)
 public class HeldItemRendererMixin {
 
-    @Inject(method = "renderFirstPersonItem", at = @At("HEAD"))
+    @Inject(method = "renderFirstPersonItem", at = @At("HEAD"), cancellable = true)
     private void riposte$renderCustomViewmodel(AbstractClientPlayerEntity player, float tickDelta, float pitch, Hand hand, float swingProgress, ItemStack item, float equipProgress, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
+
+        if (FPMCompat.isFpmEnabled()) return;
+
         if (player == MinecraftClient.getInstance().player && hand == Hand.MAIN_HAND) {
             var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player)
                     .get(new Identifier(Riposte.MOD_ID, "animation"));

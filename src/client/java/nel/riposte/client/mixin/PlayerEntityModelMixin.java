@@ -3,6 +3,8 @@ package nel.riposte.client.mixin;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
 import nel.riposte.Riposte;
 import nel.riposte.client.RiposteClient;
+import nel.riposte.client.compat.FPMCompat;
+import nel.riposte.client.render.AnimationBlender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
@@ -13,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(PlayerEntityModel.class)
+@Mixin(value = PlayerEntityModel.class, priority = 10000)
 public class PlayerEntityModelMixin {
 
     @Inject(method = "setAngles(Lnet/minecraft/entity/LivingEntity;FFFFF)V", at = @At("RETURN"))
@@ -23,8 +25,16 @@ public class PlayerEntityModelMixin {
             var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
             PlayerEntityModel<?> model = (PlayerEntityModel<?>) (Object) this;
 
-            if (animationContainer != null && animationContainer.isActive()) {
-                boolean isFirstPerson = player == MinecraftClient.getInstance().player && MinecraftClient.getInstance().options.getPerspective().isFirstPerson();
+            MinecraftClient client = MinecraftClient.getInstance();
+            boolean isFirstPerson = player == client.player && client.options.getPerspective().isFirstPerson();
+            boolean inInventory = client.currentScreen != null;
+            boolean isAnimationActive = animationContainer != null && animationContainer.isActive();
+
+            boolean isFpm = FPMCompat.isFpmEnabled();
+
+            AnimationBlender.PlayerBlendState state = AnimationBlender.get(player.getUuid());
+
+            if (isAnimationActive) {
                 boolean isFallDamage = "parry_fall_damage".equals(RiposteClient.currentParryAnimation);
 
                 float pitchRad = headPitch * ((float)Math.PI / 180F);
@@ -39,7 +49,8 @@ public class PlayerEntityModelMixin {
                     }
                 }
 
-                if (isFirstPerson) {
+                // If FPM is enabled, we NEVER manually hide the body. FPM does it natively.
+                if (isFirstPerson && !isFpm && !inInventory) {
                     model.head.visible = false;
                     model.hat.visible = false;
                     model.body.visible = false;
@@ -55,23 +66,53 @@ public class PlayerEntityModelMixin {
                     model.jacket.pitch += pitchRad * 0.5f;
                 }
             } else {
-                // If animation is NOT active, ensure limbs are visible again
-                model.head.visible = true;
-                model.hat.visible = true;
-                model.body.visible = true;
-                model.jacket.visible = true;
-                model.leftArm.visible = true;
-                model.leftSleeve.visible = true;
-                model.rightArm.visible = true;
-                model.rightSleeve.visible = true;
-                model.leftLeg.visible = true;
-                model.leftPants.visible = true;
-                model.rightLeg.visible = true;
-                model.rightPants.visible = true;
-
-                // Clear the current animation tracker string to prevent reuse
                 RiposteClient.currentParryAnimation = "";
+
+                // =========================================================================
+                // THE ULTIMATE FLICKER FIX:
+                // Only restore visibility if we are in Third-Person or inside an Inventory.
+                // If we are in First-Person, we MUST leave it alone so Better Combat / PlayerAnimator
+                // can keep the head safely hidden during their attacks!
+                // =========================================================================
+                if (!isFirstPerson || inInventory) {
+                    model.head.visible = true;
+                    model.hat.visible = true;
+                    model.body.visible = true;
+                    model.jacket.visible = true;
+                    model.leftArm.visible = true;
+                    model.leftSleeve.visible = true;
+                    model.rightArm.visible = true;
+                    model.rightSleeve.visible = true;
+                    model.leftLeg.visible = true;
+                    model.leftPants.visible = true;
+                    model.rightLeg.visible = true;
+                    model.rightPants.visible = true;
+                }
             }
+
+            // ============================================
+            // 🎬 THE MATHEMATICAL ANIMATION BLENDER
+            // ============================================
+            long now = System.currentTimeMillis();
+
+            if (isAnimationActive && !state.wasActive) {
+                state.blendStart.copyFrom(state.lastFrame);
+                state.blendStartTime = now;
+            } else if (!isAnimationActive && state.wasActive) {
+                state.blendStart.copyFrom(state.lastFrame);
+                state.blendStartTime = now;
+            }
+            state.wasActive = isAnimationActive;
+
+            long elapsed = now - state.blendStartTime;
+            long blendDurationMs = 250;
+
+            if (elapsed < blendDurationMs) {
+                float progress = (float) elapsed / blendDurationMs;
+                float ease = (float) (0.5 * (1.0 - Math.cos(Math.PI * progress)));
+                state.applyBlend(model, ease);
+            }
+            state.lastFrame.copyFrom(model);
         }
     }
 }

@@ -60,9 +60,10 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.network.PacketByteBuf;
 import org.joml.Matrix4f;
 
-import java.io.InputStream;
 import java.util.Random;
 import java.util.UUID;
+import net.fabricmc.loader.api.FabricLoader;
+import nel.riposte.client.compat.FPMCompat;
 
 public class RiposteClient implements ClientModInitializer {
 
@@ -107,6 +108,11 @@ public class RiposteClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+
+		if (FabricLoader.getInstance().isModLoaded("entity_model_features")) {
+			nel.riposte.client.compat.EMFCompat.init();
+		}
+
 		CLIENT_CONFIG = ConfigApiJava.registerAndLoadConfig(RiposteClientConfig::new, RegisterType.CLIENT);
 
 		@SuppressWarnings("unchecked")
@@ -637,7 +643,6 @@ public class RiposteClient implements ClientModInitializer {
 		if (animation != null) {
 			var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(new Identifier(Riposte.MOD_ID, "animation"));
 			if (animationContainer != null) {
-				animationContainer.setAnimation(null);
 				var keyframePlayer = new KeyframeAnimationPlayer(animation);
 
 				boolean isKick = animName.contains("kick_hit");
@@ -650,13 +655,21 @@ public class RiposteClient implements ClientModInitializer {
 
 				if (CLIENT_CONFIG.firstPersonAnimations) {
 					keyframePlayer.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
-					keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, showLeft, true, showLeft));
+
+					if (FPMCompat.isFpmEnabled()) {
+						keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(false, false, false, false));
+					} else {
+						keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(true, showLeft, true, showLeft));
+					}
 				} else {
 					keyframePlayer.setFirstPersonMode(FirstPersonMode.NONE);
 					keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(false, false, false, false));
 				}
 
-				animationContainer.setAnimation(keyframePlayer);
+				animationContainer.replaceAnimationWithFade(
+						dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier.standardFadeIn(5, dev.kosmx.playerAnim.core.util.Ease.INOUTSINE),
+						keyframePlayer
+				);
 			}
 		}
 	}
