@@ -15,9 +15,9 @@ import java.util.LinkedList;
 public class ParryTrailParticle extends SpriteBillboardParticle {
 
     private final LinkedList<Vec3d> trailHistory = new LinkedList<>();
-    private final int maxTrailLength = 80;
+    private final int maxTrailLength = 40;
     private final float baseSize = 0.035f;
-    private final double dotSpacing = 0.15;
+    private final double dotSpacing = 0.22;
     private final boolean isHeavy;
 
     protected ParryTrailParticle(ClientWorld world, double x, double y, double z, double vx, double vy, double vz, boolean isHeavy) {
@@ -61,7 +61,7 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
 
     @Override
     public void buildGeometry(VertexConsumer vertexConsumer, Camera camera, float tickDelta) {
-        if (this.trailHistory.size() < 2) return;
+        if (this.trailHistory.isEmpty() || this.sprite == null) return;
 
         Vec3d camPos = camera.getPos();
         float minU = this.sprite.getMinU();
@@ -76,12 +76,15 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
         float ageFade = lifeRatio > 0.5f ? (1.0f - lifeRatio) * 2.0f : 1.0f;
         if (ageFade < 0) ageFade = 0;
 
-        for (int i = 0; i < this.trailHistory.size() - 1; i++) {
+        int count = this.trailHistory.size();
+        int segments = Math.max(1, count - 1);
+
+        for (int i = 0; i < segments; i++) {
             Vec3d current = this.trailHistory.get(i);
-            Vec3d next = this.trailHistory.get(i + 1);
+            Vec3d next = (i + 1 < count) ? this.trailHistory.get(i + 1) : current;
 
             double dist = current.distanceTo(next);
-            int steps = Math.max(1, (int) Math.ceil(dist / dotSpacing));
+            int steps = dist > 0 ? Math.max(1, (int) Math.ceil(dist / dotSpacing)) : 1;
 
             for (int step = 0; step < steps; step++) {
                 float stepFraction = (float) step / steps;
@@ -90,11 +93,11 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
                 double iy = MathHelper.lerp(stepFraction, current.y, next.y);
                 double iz = MathHelper.lerp(stepFraction, current.z, next.z);
 
-                float baseProgress = (float) i / (this.trailHistory.size() - 1);
-                float nextProgress = (float) (i + 1) / (this.trailHistory.size() - 1);
+                float baseProgress = (float) i / segments;
+                float nextProgress = (float) (i + 1) / segments;
                 float progress = MathHelper.lerp(stepFraction, baseProgress, nextProgress);
 
-                float currentSize = this.baseSize * (1.0f - (progress * 0.7f));
+                float currentSize = this.baseSize * (1.0f - (progress * 0.6f));
 
                 float r, g, b;
                 if (this.isHeavy) {
@@ -128,6 +131,7 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
                 }
 
                 float alpha = ageFade * (1.0f - progress);
+                if (alpha <= 0.01f) continue;
 
                 Vector3f[] corners = new Vector3f[]{
                         new Vector3f(-1.0F, -1.0F, 0.0F),
@@ -150,6 +154,11 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
                 vertexConsumer.vertex(corners[1].x(), corners[1].y(), corners[1].z()).texture(maxU, minV).color(r, g, b, alpha).light(light);
                 vertexConsumer.vertex(corners[2].x(), corners[2].y(), corners[2].z()).texture(minU, minV).color(r, g, b, alpha).light(light);
                 vertexConsumer.vertex(corners[3].x(), corners[3].y(), corners[3].z()).texture(minU, maxV).color(r, g, b, alpha).light(light);
+
+                vertexConsumer.vertex(corners[3].x(), corners[3].y(), corners[3].z()).texture(minU, maxV).color(r, g, b, alpha).light(light);
+                vertexConsumer.vertex(corners[2].x(), corners[2].y(), corners[2].z()).texture(minU, minV).color(r, g, b, alpha).light(light);
+                vertexConsumer.vertex(corners[1].x(), corners[1].y(), corners[1].z()).texture(maxU, minV).color(r, g, b, alpha).light(light);
+                vertexConsumer.vertex(corners[0].x(), corners[0].y(), corners[0].z()).texture(maxU, maxV).color(r, g, b, alpha).light(light);
             }
         }
     }

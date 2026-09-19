@@ -52,17 +52,22 @@ import net.minecraft.particle.ParticleTypes;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import dev.kosmx.playerAnim.core.data.KeyframeAnimation;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
+import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RiposteClient implements ClientModInitializer {
 
@@ -104,6 +109,25 @@ public class RiposteClient implements ClientModInitializer {
 	private static int renderBottomPadding = 0;
 
 	public static String currentParryAnimation = "";
+
+	private static final Map<String, KeyTextureInfo> KEY_TEXTURE_CACHE = new ConcurrentHashMap<>();
+	private static long lastCacheClear = 0L;
+
+	public static class KeyTextureInfo {
+		public final Identifier identifier;
+		public final float u0;
+		public final float v0;
+		public final float u1;
+		public final float v1;
+
+		public KeyTextureInfo(Identifier identifier, float u0, float v0, float u1, float v1) {
+			this.identifier = identifier;
+			this.u0 = u0;
+			this.v0 = v0;
+			this.u1 = u1;
+			this.v1 = v1;
+		}
+	}
 
 	@Override
 	public void onInitializeClient() {
@@ -443,7 +467,7 @@ public class RiposteClient implements ClientModInitializer {
 			return ActionResult.PASS;
 		});
 
-		WorldRenderEvents.AFTER_ENTITIES.register(context -> {
+		WorldRenderEvents.LAST.register(context -> {
 			MinecraftClient client = MinecraftClient.getInstance();
 			if (client.player == null || client.world == null || !Riposte.CONFIG.addons.finishers.enableFinishers) return;
 
@@ -478,7 +502,8 @@ public class RiposteClient implements ClientModInitializer {
 						net.minecraft.client.render.Camera camera = context.camera();
 						float tickDelta = client.getRenderTickCounter().getTickDelta(true);
 
-						double x = net.minecraft.util.math.MathHelper.lerp(tickDelta, target.lastRenderX, target.getX()) - camera.getPos().x;						double y = net.minecraft.util.math.MathHelper.lerp(tickDelta, target.lastRenderY, target.getY()) + target.getHeight() + 0.5f - camera.getPos().y;
+						double x = net.minecraft.util.math.MathHelper.lerp(tickDelta, target.lastRenderX, target.getX()) - camera.getPos().x;
+						double y = net.minecraft.util.math.MathHelper.lerp(tickDelta, target.lastRenderY, target.getY()) + (target.getHeight() * 0.55f) - camera.getPos().y;
 						double z = net.minecraft.util.math.MathHelper.lerp(tickDelta, target.lastRenderZ, target.getZ()) - camera.getPos().z;
 
 						matrices.push();
@@ -486,6 +511,7 @@ public class RiposteClient implements ClientModInitializer {
 						matrices.multiply(client.gameRenderer.getCamera().getRotation());
 
 						float scale = CLIENT_CONFIG.addons.finishers.contextualButtonPromptSize;
+						if (scale <= 0.001f) scale = 0.025f;
 						matrices.scale(-scale, -scale, scale);
 
 						Matrix4f matrix4f = matrices.peek().getPositionMatrix();
@@ -494,25 +520,59 @@ public class RiposteClient implements ClientModInitializer {
 						net.minecraft.client.render.VertexConsumer consumer = context.consumers().getBuffer(net.minecraft.client.render.RenderLayer.getTextSeeThrough(FINISHER_PROMPT_BG));
 						float texSize = 16f;
 
-						consumer.vertex(matrix4f, -texSize, -texSize, 0).color(255, 255, 255, 255).texture(0f, 0f).light(light);
-						consumer.vertex(matrix4f, -texSize, texSize, 0).color(255, 255, 255, 255).texture(0f, 1f).light(light);
-						consumer.vertex(matrix4f, texSize, texSize, 0).color(255, 255, 255, 255).texture(1f, 1f).light(light);
-						consumer.vertex(matrix4f, texSize, -texSize, 0).color(255, 255, 255, 255).texture(1f, 0f).light(light);
+						consumer.vertex(matrix4f, -texSize, -texSize, 0).color(255, 255, 255, 255).texture(1f, 0f).light(light);
+						consumer.vertex(matrix4f, -texSize, texSize, 0).color(255, 255, 255, 255).texture(1f, 1f).light(light);
+						consumer.vertex(matrix4f, texSize, texSize, 0).color(255, 255, 255, 255).texture(0f, 1f).light(light);
+						consumer.vertex(matrix4f, texSize, -texSize, 0).color(255, 255, 255, 255).texture(0f, 0f).light(light);
 
-						matrices.push();						matrices.translate(0f, 0f, -0.05f);
-						float textScale = CLIENT_CONFIG.addons.finishers.contextualButtonPromptTextScale;
-						matrices.scale(textScale, textScale, textScale);
-						Matrix4f textMatrix4f = matrices.peek().getPositionMatrix();
+						consumer.vertex(matrix4f, texSize, -texSize, 0).color(255, 255, 255, 255).texture(0f, 0f).light(light);
+						consumer.vertex(matrix4f, texSize, texSize, 0).color(255, 255, 255, 255).texture(0f, 1f).light(light);
+						consumer.vertex(matrix4f, -texSize, texSize, 0).color(255, 255, 255, 255).texture(1f, 1f).light(light);
+						consumer.vertex(matrix4f, -texSize, -texSize, 0).color(255, 255, 255, 255).texture(1f, 0f).light(light);
 
-						String keyName = finisherKey.getBoundKeyLocalizedText().getString().toUpperCase();
-						float textWidth = client.textRenderer.getWidth(keyName);
-
-						client.textRenderer.draw(keyName, -textWidth / 2f, -4f, 0xFFFFFF, false, textMatrix4f, context.consumers(), net.minecraft.client.font.TextRenderer.TextLayerType.SEE_THROUGH, 0x00000000, light);
-						matrices.pop();
-
-						matrices.pop();						if (context.consumers() instanceof net.minecraft.client.render.VertexConsumerProvider.Immediate immediate) {
+						if (context.consumers() instanceof net.minecraft.client.render.VertexConsumerProvider.Immediate immediate) {
 							immediate.draw();
 						}
+
+						String rawKeyName = finisherKey.getBoundKeyLocalizedText().getString().trim();
+						KeyTextureInfo keyInfo = getKeyTextureInfo(rawKeyName);
+
+						float keySize = 9.5f;
+						boolean isAsciiFont = keyInfo.identifier.getPath().contains("ascii");
+						float xOffset = isAsciiFont ? -2.0f : 0.0f;
+
+						float x1 = -keySize + xOffset;
+						float x2 = keySize + xOffset;
+						float y1 = -keySize;
+						float y2 = keySize;
+
+						net.minecraft.client.render.VertexConsumer keyConsumer = context.consumers().getBuffer(net.minecraft.client.render.RenderLayer.getTextSeeThrough(keyInfo.identifier));
+
+						keyConsumer.vertex(matrix4f, x1, y1, -0.05f).color(255, 255, 255, 255).texture(keyInfo.u1, keyInfo.v0).light(light);
+						keyConsumer.vertex(matrix4f, x1, y2, -0.05f).color(255, 255, 255, 255).texture(keyInfo.u1, keyInfo.v1).light(light);
+						keyConsumer.vertex(matrix4f, x2, y2, -0.05f).color(255, 255, 255, 255).texture(keyInfo.u0, keyInfo.v1).light(light);
+						keyConsumer.vertex(matrix4f, x2, y1, -0.05f).color(255, 255, 255, 255).texture(keyInfo.u0, keyInfo.v0).light(light);
+
+						keyConsumer.vertex(matrix4f, x2, y1, -0.05f).color(255, 255, 255, 255).texture(keyInfo.u0, keyInfo.v0).light(light);
+						keyConsumer.vertex(matrix4f, x2, y2, -0.05f).color(255, 255, 255, 255).texture(keyInfo.u0, keyInfo.v1).light(light);
+						keyConsumer.vertex(matrix4f, x1, y2, -0.05f).color(255, 255, 255, 255).texture(keyInfo.u1, keyInfo.v1).light(light);
+						keyConsumer.vertex(matrix4f, x1, y1, -0.05f).color(255, 255, 255, 255).texture(keyInfo.u1, keyInfo.v0).light(light);
+
+						keyConsumer.vertex(matrix4f, x1, y1, 0.05f).color(255, 255, 255, 255).texture(keyInfo.u1, keyInfo.v0).light(light);
+						keyConsumer.vertex(matrix4f, x1, y2, 0.05f).color(255, 255, 255, 255).texture(keyInfo.u1, keyInfo.v1).light(light);
+						keyConsumer.vertex(matrix4f, x2, y2, 0.05f).color(255, 255, 255, 255).texture(keyInfo.u0, keyInfo.v1).light(light);
+						keyConsumer.vertex(matrix4f, x2, y1, 0.05f).color(255, 255, 255, 255).texture(keyInfo.u0, keyInfo.v0).light(light);
+
+						keyConsumer.vertex(matrix4f, x2, y1, 0.05f).color(255, 255, 255, 255).texture(keyInfo.u0, keyInfo.v0).light(light);
+						keyConsumer.vertex(matrix4f, x2, y2, 0.05f).color(255, 255, 255, 255).texture(keyInfo.u0, keyInfo.v1).light(light);
+						keyConsumer.vertex(matrix4f, x1, y2, 0.05f).color(255, 255, 255, 255).texture(keyInfo.u1, keyInfo.v1).light(light);
+						keyConsumer.vertex(matrix4f, x1, y1, 0.05f).color(255, 255, 255, 255).texture(keyInfo.u1, keyInfo.v0).light(light);
+
+						if (context.consumers() instanceof net.minecraft.client.render.VertexConsumerProvider.Immediate immediate) {
+							immediate.draw();
+						}
+
+						matrices.pop();
 					}
 				}
 			}
@@ -595,6 +655,62 @@ public class RiposteClient implements ClientModInitializer {
 
 			RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 			drawContext.getMatrices().pop();
+		});
+	}
+
+	public static KeyTextureInfo getKeyTextureInfo(String keyString) {
+		if (keyString == null || keyString.isEmpty()) {
+			keyString = "H";
+		}
+
+		long now = System.currentTimeMillis();
+		if (now - lastCacheClear > 3000L) {
+			KEY_TEXTURE_CACHE.clear();
+			lastCacheClear = now;
+		}
+
+		String normalized = keyString.trim();
+		return KEY_TEXTURE_CACHE.computeIfAbsent(normalized, key -> {
+			String cleanName = key.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]", "");
+			if (cleanName.isEmpty()) {
+				cleanName = "h";
+			}
+
+			MinecraftClient client = MinecraftClient.getInstance();
+			var rm = client.getResourceManager();
+
+			Identifier inKeys = Identifier.of(Riposte.MOD_ID, "textures/gui/keys/" + cleanName + ".png");
+			Identifier inGui = Identifier.of(Riposte.MOD_ID, "textures/gui/" + cleanName + ".png");
+			Identifier inKeyPrefix = Identifier.of(Riposte.MOD_ID, "textures/gui/key_" + cleanName + ".png");
+
+			if (rm != null && rm.getResource(inKeys).isPresent()) {
+				return new KeyTextureInfo(inKeys, 0.0f, 0.0f, 1.0f, 1.0f);
+			}
+			if (rm != null && rm.getResource(inGui).isPresent()) {
+				return new KeyTextureInfo(inGui, 0.0f, 0.0f, 1.0f, 1.0f);
+			}
+			if (rm != null && rm.getResource(inKeyPrefix).isPresent()) {
+				return new KeyTextureInfo(inKeyPrefix, 0.0f, 0.0f, 1.0f, 1.0f);
+			}
+
+			char c = 'H';
+			for (char ch : key.toCharArray()) {
+				if (Character.isLetterOrDigit(ch)) {
+					c = Character.toUpperCase(ch);
+					break;
+				}
+			}
+
+			int ascii = (int) c;
+			if (ascii >= 32 && ascii < 128) {
+				float u0 = (ascii % 16) / 16.0f;
+				float v0 = (ascii / 16) / 16.0f;
+				float u1 = u0 + (1.0f / 16.0f);
+				float v1 = v0 + (1.0f / 16.0f);
+				return new KeyTextureInfo(Identifier.of("minecraft", "textures/font/ascii.png"), u0, v0, u1, v1);
+			}
+
+			return new KeyTextureInfo(inGui, 0.0f, 0.0f, 1.0f, 1.0f);
 		});
 	}
 

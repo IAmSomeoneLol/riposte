@@ -37,7 +37,11 @@ public class PlayerEntityModelMixin {
             if (isAnimationActive) {
                 boolean isFallDamage = "parry_fall_damage".equals(RiposteClient.currentParryAnimation);
 
+                model.body.yaw = 0.0f;
+                model.head.yaw = 0.0f;
+
                 float pitchRad = headPitch * ((float)Math.PI / 180F);
+
 
                 if (!isFallDamage) {
                     model.rightArm.pitch += pitchRad;

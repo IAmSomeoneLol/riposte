@@ -131,6 +131,9 @@ public class RiposteConfig extends Config {
         }
 
         public boolean isHealthEligible(float currentHealthPercent) {
+            if (this.finisherMode == FinisherMode.GAUGE_METER) {
+                return true;
+            }
             return currentHealthPercent <= this.finisherHealthThresholdPercent;
         }
     }
