@@ -1,165 +1,158 @@
 {
-	"format_version": "1.8.0",
-	"animations": {
-		"kick_hit": {
-			"animation_length": 0.625,
-			"override_previous_animation": true,
-			"bones": {
-				"left_arm": {
-					"rotation": {
-						"0.0": {
-							"post": {
-								"vector": [-106.3849, 8.0214, -48.5463]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.05": {
-							"post": {
-								"vector": [-105.7414, -9.2423, -103.6094]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.2": {
-							"post": {
-								"vector": [-86.4833, 5.6927, -33.8945]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.4167": {
-							"post": {
-								"vector": [-7.0843, 0.2006, -5.3518]
-							},
-							"lerp_mode": "catmullrom"
-						}
-					},
-					"position": {
-						"0.0": {
-							"post": {
-								"vector": [-1, -1, -4]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.05": {
-							"post": {
-								"vector": [-2, -1, -8]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.1333": {
-							"post": {
-								"vector": [-1, -1, -7]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.4167": {
-							"post": {
-								"vector": [0, 0, 0]
-							},
-							"lerp_mode": "catmullrom"
-						}
-					}
-				},
-				"right_arm": {
-					"rotation": {
-						"0.0": {
-							"post": {
-								"vector": [49.1053, 53.5565, 133.1071]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.0833": {
-							"post": {
-								"vector": [15.4519, 71.8211, 106.2218]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.1667": {
-							"post": {
-								"vector": [49.1053, 53.5565, 133.1071]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.2833": {
-							"post": {
-								"vector": [-12.398, 57.3883, 40.2107]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.3833": {
-							"post": {
-								"vector": [-24.4761, 28.5907, 15.1464]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.5": {
-							"post": {
-								"vector": [-10.7704, 5.3619, 11.7697]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.55": {
-							"post": {
-								"vector": [-3.0818, -1.196, 3.4427]
-							},
-							"lerp_mode": "catmullrom"
-						}
-					},
-					"position": {
-						"0.0": {
-							"post": {
-								"vector": [0, 0, 3]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.0833": {
-							"post": {
-								"vector": [0, 0, 2]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.1667": {
-							"post": {
-								"vector": [0, 0, 1]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.45": {
-							"post": {
-								"vector": [0, 0, 0]
-							},
-							"lerp_mode": "catmullrom"
-						}
-					}
-				},
-				"body": {
-					"rotation": {
-						"0.0": {
-							"post": {
-								"vector": [0, 30, 0]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.05": {
-							"post": {
-								"vector": [0, 42.5, 0]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.15": {
-							"post": {
-								"vector": [0, 30, 0]
-							},
-							"lerp_mode": "catmullrom"
-						},
-						"0.4167": {
-							"post": {
-								"vector": [0, 0, 0]
-							},
-							"lerp_mode": "catmullrom"
-						}
-					}
-				}
-			}
-		}
-	}
+  "version": 1,
+  "name": "kick_hit",
+  "emote": {
+    "beginTick": 0,
+    "endTick": 13,
+    "stopTick": 13,
+    "isLoop": false,
+    "returnTick": 0,
+    "nsfw": false,
+    "degrees": false,
+    "moves": [
+      {
+        "tick": 0,
+        "easing": "INOUTSINE",
+        "leftArm": {
+          "pitch": -1.856767,
+          "yaw": 0.14,
+          "roll": -0.847293,
+          "x": 4,
+          "y": 1,
+          "z": -4
+        },
+        "rightArm": {
+          "pitch": 0.857049,
+          "yaw": 0.934737,
+          "roll": 2.323157,
+          "x": -5,
+          "y": 2,
+          "z": 3
+        },
+        "body": {
+          "pitch": 0,
+          "yaw": 0.523599,
+          "roll": 0
+        }
+      },
+      {
+        "tick": 1,
+        "easing": "INOUTSINE",
+        "leftArm": {
+          "pitch": -1.845536,
+          "yaw": -0.161309,
+          "roll": -1.808325,
+          "x": 3,
+          "y": 1,
+          "z": -8
+        },
+        "body": {
+          "pitch": 0,
+          "yaw": 0.741765,
+          "roll": 0
+        }
+      },
+      {
+        "tick": 2,
+        "easing": "INOUTSINE",
+        "rightArm": {
+          "pitch": 0.269687,
+          "yaw": 1.253515,
+          "roll": 1.85392,
+          "x": -5,
+          "y": 2,
+          "z": 2
+        }
+      },
+      {
+        "tick": 3,
+        "easing": "INOUTSINE",
+        "leftArm": {
+          "x": 4,
+          "y": 1,
+          "z": -7
+        },
+        "rightArm": {
+          "pitch": 0.857049,
+          "yaw": 0.934737,
+          "roll": 2.323157,
+          "x": -5,
+          "y": 2,
+          "z": 1
+        },
+        "body": {
+          "pitch": 0,
+          "yaw": 0.523599,
+          "roll": 0
+        }
+      },
+      {
+        "tick": 4,
+        "easing": "INOUTSINE",
+        "leftArm": {
+          "pitch": -1.509418,
+          "yaw": 0.099356,
+          "roll": -0.591571
+        }
+      },
+      {
+        "tick": 6,
+        "easing": "INOUTSINE",
+        "rightArm": {
+          "pitch": -0.216386,
+          "yaw": 1.001615,
+          "roll": 0.701809
+        }
+      },
+      {
+        "tick": 8,
+        "easing": "INOUTSINE",
+        "leftArm": {
+          "pitch": -0.123644,
+          "yaw": 0.003501,
+          "roll": -0.093407,
+          "x": 5,
+          "y": 2,
+          "z": 0
+        },
+        "rightArm": {
+          "pitch": -0.427189,
+          "yaw": 0.499002,
+          "roll": 0.264355
+        },
+        "body": {
+          "pitch": 0,
+          "yaw": 0,
+          "roll": 0
+        }
+      },
+      {
+        "tick": 9,
+        "easing": "INOUTSINE",
+        "rightArm": {
+          "x": -5,
+          "y": 2,
+          "z": 0
+        }
+      },
+      {
+        "tick": 10,
+        "easing": "INOUTSINE",
+        "rightArm": {
+          "pitch": -0.187979,
+          "yaw": 0.093583,
+          "roll": 0.20542
+        }
+      },
+      {
+        "tick": 11,
+        "easing": "INOUTSINE",
+        "rightArm": {
+          "pitch": -0.053788,
+          "yaw": -0.020874,
+          "roll": 0.060086
+        }
+      }
+    ]
+  }
 }

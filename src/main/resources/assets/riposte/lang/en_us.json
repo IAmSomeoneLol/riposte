@@ -8,6 +8,14 @@
   "item.riposte.neural_link": "Neural Link",
   "item.riposte.shulker_head_plate": "Shulker Head Plate",
 
+  "tag.item.riposte.head": "Head Accessories",
+  "tag.item.riposte.parry": "Parry Accessories",
+  "tag.item.trinkets.chest.cape": "Capes",
+  "tag.item.trinkets.chest.charm": "Charms",
+  "tag.item.trinkets.hand.ring": "Rings",
+  "tag.item.trinkets.head.hat": "Hats",
+  "tag.item.trinkets.riposte.parry": "Parry Trinkets",
+
   "tooltip.riposte.slot.parry": "When in Parry Slot:",
   "tooltip.riposte.slot.ring": "When in Ring Slot:",
   "tooltip.riposte.slot.necklace": "When in Necklace Slot:",

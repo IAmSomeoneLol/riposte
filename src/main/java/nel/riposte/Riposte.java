@@ -27,6 +27,7 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.resource.ResourceType;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.text.Text;
@@ -254,7 +255,7 @@ public class Riposte implements ModInitializer {
 					boolean canExecute = false;
 
 					if (CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
-						if (finisherData.getFinisherGauge(targetId) >= 100f) {
+						if (finisherData.getFinisherGauge(targetId) >= 99.0f) {
 							finisherData.consumeFinisherGauge(targetId, 100f);
 							canExecute = true;
 						}
@@ -266,6 +267,9 @@ public class Riposte implements ModInitializer {
 					}
 
 					if (canExecute) {
+						if (player instanceof ServerPlayerEntity serverPlayer) {
+							ServerPlayNetworking.send(serverPlayer, new RipostePayloads.SyncFinisherGaugePayload(targetId, finisherData.getFinisherGauge(targetId), finisherData.getParryCount(targetId)));
+						}
 						finisherData.startFinisher(targetId, def.id);
 					}
 				}

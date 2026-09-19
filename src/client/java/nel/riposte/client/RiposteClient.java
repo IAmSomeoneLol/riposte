@@ -10,7 +10,6 @@ import dev.kosmx.playerAnim.api.layered.IAnimation;
 import dev.kosmx.playerAnim.api.layered.KeyframeAnimationPlayer;
 import dev.kosmx.playerAnim.api.layered.ModifierLayer;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
-import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationFactory;
 import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationRegistry;
 import me.fzzyhmstrs.fzzy_config.api.ConfigApiJava;
 import me.fzzyhmstrs.fzzy_config.api.RegisterType;
@@ -113,6 +112,8 @@ public class RiposteClient implements ClientModInitializer {
 	private static final Map<String, KeyTextureInfo> KEY_TEXTURE_CACHE = new ConcurrentHashMap<>();
 	private static long lastCacheClear = 0L;
 
+	private static final Map<UUID, ModifierLayer<IAnimation>> ANIMATION_CONTAINERS = new ConcurrentHashMap<>();
+
 	public static class KeyTextureInfo {
 		public final Identifier identifier;
 		public final float u0;
@@ -127,6 +128,28 @@ public class RiposteClient implements ClientModInitializer {
 			this.u1 = u1;
 			this.v1 = v1;
 		}
+	}
+
+	public static ModifierLayer<IAnimation> getAnimationContainer(AbstractClientPlayerEntity player) {
+		if (player == null) return null;
+		return ANIMATION_CONTAINERS.computeIfAbsent(player.getUuid(), uuid -> {
+			ModifierLayer<IAnimation> layer = new ModifierLayer<>();
+			var animationStack = PlayerAnimationAccess.getPlayerAnimLayer(player);
+			if (animationStack != null) {
+				animationStack.addAnimLayer(1000, layer);
+			}
+			return layer;
+		});
+	}
+
+	public static boolean isAnimationActive(AbstractClientPlayerEntity player) {
+		if (player == null) return false;
+		var container = getAnimationContainer(player);
+		if (container != null && container.isActive()) return true;
+		if (player == MinecraftClient.getInstance().player && currentParryAnimation != null && !currentParryAnimation.isEmpty()) {
+			return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -155,11 +178,11 @@ public class RiposteClient implements ClientModInitializer {
 				"category.riposte.keys"
 		));
 
-		PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(
-				Identifier.of(Riposte.MOD_ID, "animation"),
-				42,
-				(AbstractClientPlayerEntity player) -> new ModifierLayer<>()
-		);
+		PlayerAnimationAccess.REGISTER_ANIMATION_EVENT.register((player, animationStack) -> {
+			ModifierLayer<IAnimation> layer = new ModifierLayer<>();
+			animationStack.addAnimLayer(1000, layer);
+			ANIMATION_CONTAINERS.put(player.getUuid(), layer);
+		});
 
 		TrinketRenderer emptyRenderer = (stack, slotReference, contextModel, matrices, vertexConsumers, light, entity, limbAngle, limbDistance, tickDelta, animationProgress, headYaw, headPitch) -> {};
 
@@ -335,6 +358,19 @@ public class RiposteClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
+			if (client.world != null) {
+				for (AbstractClientPlayerEntity p : client.world.getPlayers()) {
+					if (isAnimationActive(p) || (p instanceof FinisherData f && f.isExecutingFinisher())) {
+						float yaw = p.getYaw();
+						float prevYaw = p.prevYaw;
+						p.bodyYaw = yaw;
+						p.prevBodyYaw = prevYaw;
+						p.headYaw = yaw;
+						p.prevHeadYaw = prevYaw;
+					}
+				}
+			}
+
 			if (client.player != null) {
 				FinisherData fData = (FinisherData) client.player;
 				boolean isExecuting = fData.isExecutingFinisher();
@@ -360,6 +396,19 @@ public class RiposteClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (client.world != null) {
+				for (AbstractClientPlayerEntity p : client.world.getPlayers()) {
+					if (isAnimationActive(p) || (p instanceof FinisherData f && f.isExecutingFinisher())) {
+						float yaw = p.getYaw();
+						float prevYaw = p.prevYaw;
+						p.bodyYaw = yaw;
+						p.prevBodyYaw = prevYaw;
+						p.headYaw = yaw;
+						p.prevHeadYaw = prevYaw;
+					}
+				}
+			}
+
 			if (shaderActive) {
 				if (!CLIENT_CONFIG.lethalParryShader || System.currentTimeMillis() - lastLethalParryTimestamp > CLIENT_CONFIG.lethalShaderDurationMs) {
 					if (client.gameRenderer != null) client.gameRenderer.disablePostProcessor();
@@ -400,8 +449,7 @@ public class RiposteClient implements ClientModInitializer {
 				if (!data.isParryActive(currentWindow)) {
 					if (currentParryAnimation.equals("parry_fist_ready") || currentParryAnimation.equals("parry_weapon_ready")) {
 						if (client.options.attackKey.isPressed() || client.options.useKey.isPressed()) {
-							@SuppressWarnings("unchecked")
-							var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(client.player).get(Identifier.of(Riposte.MOD_ID, "animation"));
+							var animationContainer = getAnimationContainer(client.player);
 							if (animationContainer != null) {
 								animationContainer.setAnimation(null);
 								currentParryAnimation = "";
@@ -425,14 +473,16 @@ public class RiposteClient implements ClientModInitializer {
 					Entity closestValid = null;
 					double closestDist = Double.MAX_VALUE;
 
+					Vec3d eyePos = client.player.getEyePos();
 					Vec3d lookVec = client.player.getRotationVec(1.0F).normalize();
 
 					for (Entity target : client.world.getEntitiesByClass(LivingEntity.class, box, e -> e != client.player)) {
 						double dist = client.player.distanceTo(target);
 						if (dist > 6.0f) continue;
 
-						Vec3d toTarget = target.getPos().subtract(client.player.getPos()).normalize();
-						if (lookVec.dotProduct(toTarget) < 0.5) continue;
+						Vec3d targetCenter = target.getBoundingBox().getCenter();
+						Vec3d toTarget = targetCenter.subtract(eyePos).normalize();
+						if (lookVec.dotProduct(toTarget) < 0.35) continue;
 
 						String entityId = net.minecraft.registry.Registries.ENTITY_TYPE.getId(target.getType()).toString();
 						if (!Riposte.CONFIG.addons.finishers.isFinisherAllowedFor(entityId)) continue;
@@ -475,13 +525,15 @@ public class RiposteClient implements ClientModInitializer {
 			if (finisherData.isExecutingFinisher()) return;
 
 			Box box = client.player.getBoundingBox().expand(6.0);
+			Vec3d eyePos = client.player.getEyePos();
 			Vec3d lookVec = client.player.getRotationVec(1.0F).normalize();
 
 			for (Entity target : client.world.getEntitiesByClass(LivingEntity.class, box, e -> e != client.player)) {
 				if (client.player.distanceTo(target) > 6.0f) continue;
 
-				Vec3d toTarget = target.getPos().subtract(client.player.getPos()).normalize();
-				if (lookVec.dotProduct(toTarget) < 0.5) continue;
+				Vec3d targetCenter = target.getBoundingBox().getCenter();
+				Vec3d toTarget = targetCenter.subtract(eyePos).normalize();
+				if (lookVec.dotProduct(toTarget) < 0.35) continue;
 
 				String entityId = net.minecraft.registry.Registries.ENTITY_TYPE.getId(target.getType()).toString();
 
@@ -747,8 +799,7 @@ public class RiposteClient implements ClientModInitializer {
 		}
 
 		if (animation instanceof KeyframeAnimation keyframeAnimation) {
-			@SuppressWarnings("unchecked")
-			var animationContainer = (ModifierLayer<IAnimation>) PlayerAnimationAccess.getPlayerAssociatedData(player).get(Identifier.of(Riposte.MOD_ID, "animation"));
+			var animationContainer = getAnimationContainer(player);
 			if (animationContainer != null) {
 				var keyframePlayer = new KeyframeAnimationPlayer(keyframeAnimation);
 
@@ -773,10 +824,7 @@ public class RiposteClient implements ClientModInitializer {
 					keyframePlayer.setFirstPersonConfiguration(new FirstPersonConfiguration(false, false, false, false));
 				}
 
-				animationContainer.replaceAnimationWithFade(
-						dev.kosmx.playerAnim.api.layered.modifier.AbstractFadeModifier.standardFadeIn(5, dev.kosmx.playerAnim.core.util.Ease.INOUTSINE),
-						keyframePlayer
-				);
+				animationContainer.setAnimation(keyframePlayer);
 			}
 		}
 	}

@@ -115,6 +115,9 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
         float before = getFinisherGauge(targetId);
         float after = Math.min(300f, before + amount);
         this.riposte$gaugeMeters.put(targetId, after);
+        if (after < 100f) {
+            this.riposte$gaugeReadyTimestamps.remove(targetId);
+        }
     }
 
     @Override
@@ -137,7 +140,11 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
     @Override
     public void addParryCount(int targetId) {
         int current = getParryCount(targetId);
-        this.riposte$parryCounts.put(targetId, current + 1);
+        int updated = current + 1;
+        this.riposte$parryCounts.put(targetId, updated);
+        if (updated < Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
+            this.riposte$parryReadyTimestamps.remove(targetId);
+        }
     }
 
     @Override
@@ -201,12 +208,15 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
         PlayerEntity player = (PlayerEntity) (Object) this;
         long now = System.currentTimeMillis();
 
-        if (Riposte.CONFIG.addons.finishers.enableFinishers && player.age % 20 == 0) {
+        if (!player.getWorld().isClient && Riposte.CONFIG.addons.finishers.enableFinishers && player.age % 20 == 0) {
+            ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+
             if (Riposte.CONFIG.addons.finishers.finisherMode == RiposteConfig.FinisherMode.GAUGE_METER) {
                 this.riposte$gaugeMeters.keySet().removeIf(id -> {
                     net.minecraft.entity.Entity targetRaw = player.getWorld().getEntityById(id);
                     if (!(targetRaw instanceof LivingEntity target) || target.isRemoved()) {
                         this.riposte$gaugeReadyTimestamps.remove(id);
+                        ServerPlayNetworking.send(serverPlayer, new RipostePayloads.SyncFinisherGaugePayload(id, 0f, 0));
                         return true;
                     }
 
@@ -221,26 +231,33 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                                 this.setGaugeReadyTimestamp(id, now);
                             } else if (now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs) {
                                 this.riposte$gaugeReadyTimestamps.remove(id);
+                                ServerPlayNetworking.send(serverPlayer, new RipostePayloads.SyncFinisherGaugePayload(id, 0f, 0));
                                 return true;
                             }
-                        } else if (readyTime > 0) {
+                        } else {
                             this.riposte$gaugeReadyTimestamps.remove(id);
                         }
                     } else if (current > 0) {
-                        this.riposte$gaugeMeters.put(id, Math.max(0f, current - Riposte.CONFIG.addons.finishers.finisherGaugeConsumptionPerSecond));
+                        this.riposte$gaugeReadyTimestamps.remove(id);
+                        float decayed = Math.max(0f, current - Riposte.CONFIG.addons.finishers.finisherGaugeConsumptionPerSecond);
+                        this.riposte$gaugeMeters.put(id, decayed);
+                        ServerPlayNetworking.send(serverPlayer, new RipostePayloads.SyncFinisherGaugePayload(id, decayed, this.getParryCount(id)));
+                    } else {
+                        this.riposte$gaugeReadyTimestamps.remove(id);
                     }
                     return false;
                 });
             } else {
-                this.riposte$parryCounts.entrySet().removeIf(entry -> {
-                    int targetId = entry.getKey();
+                this.riposte$parryCounts.keySet().removeIf(targetId -> {
                     net.minecraft.entity.Entity targetRaw = player.getWorld().getEntityById(targetId);
                     if (!(targetRaw instanceof LivingEntity target) || target.isRemoved()) {
                         this.riposte$parryReadyTimestamps.remove(targetId);
+                        ServerPlayNetworking.send(serverPlayer, new RipostePayloads.SyncFinisherGaugePayload(targetId, 0f, 0));
                         return true;
                     }
 
-                    if (entry.getValue() >= Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
+                    int count = this.riposte$parryCounts.getOrDefault(targetId, 0);
+                    if (count >= Riposte.CONFIG.addons.finishers.finisherParryCountMax) {
                         float healthPercent = target.getMaxHealth() > 0 ? (target.getHealth() / target.getMaxHealth()) * 100f : 0f;
                         boolean healthEligible = Riposte.CONFIG.addons.finishers.isHealthEligible(healthPercent);
                         long readyTime = this.getParryReadyTimestamp(targetId);
@@ -249,11 +266,16 @@ public class PlayerEntityMixin implements ParryData, FinisherData {
                             if (readyTime <= 0) {
                                 this.setParryReadyTimestamp(targetId, now);
                                 return false;
+                            } else if (now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs) {
+                                this.riposte$parryReadyTimestamps.remove(targetId);
+                                ServerPlayNetworking.send(serverPlayer, new RipostePayloads.SyncFinisherGaugePayload(targetId, 0f, 0));
+                                return true;
                             }
-                            return now - readyTime > Riposte.CONFIG.addons.finishers.finisherTimeoutMs;
-                        } else if (readyTime > 0) {
+                        } else {
                             this.riposte$parryReadyTimestamps.remove(targetId);
                         }
+                    } else {
+                        this.riposte$parryReadyTimestamps.remove(targetId);
                     }
                     return false;
                 });
