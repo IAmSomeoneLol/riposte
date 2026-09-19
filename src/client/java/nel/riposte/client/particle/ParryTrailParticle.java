@@ -4,7 +4,7 @@ import net.minecraft.client.particle.*;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.particle.DefaultParticleType;
+import net.minecraft.particle.SimpleParticleType;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Quaternionf;
@@ -146,10 +146,10 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
                     corners[j].add(cx, cy, cz);
                 }
 
-                vertexConsumer.vertex(corners[0].x(), corners[0].y(), corners[0].z()).texture(maxU, maxV).color(r, g, b, alpha).light(light).next();
-                vertexConsumer.vertex(corners[1].x(), corners[1].y(), corners[1].z()).texture(maxU, minV).color(r, g, b, alpha).light(light).next();
-                vertexConsumer.vertex(corners[2].x(), corners[2].y(), corners[2].z()).texture(minU, minV).color(r, g, b, alpha).light(light).next();
-                vertexConsumer.vertex(corners[3].x(), corners[3].y(), corners[3].z()).texture(minU, maxV).color(r, g, b, alpha).light(light).next();
+                vertexConsumer.vertex(corners[0].x(), corners[0].y(), corners[0].z()).texture(maxU, maxV).color(r, g, b, alpha).light(light);
+                vertexConsumer.vertex(corners[1].x(), corners[1].y(), corners[1].z()).texture(maxU, minV).color(r, g, b, alpha).light(light);
+                vertexConsumer.vertex(corners[2].x(), corners[2].y(), corners[2].z()).texture(minU, minV).color(r, g, b, alpha).light(light);
+                vertexConsumer.vertex(corners[3].x(), corners[3].y(), corners[3].z()).texture(minU, maxV).color(r, g, b, alpha).light(light);
             }
         }
     }
@@ -159,22 +159,22 @@ public class ParryTrailParticle extends SpriteBillboardParticle {
         return ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT;
     }
 
-    public static class HeavyFactory implements ParticleFactory<DefaultParticleType> {
+    public static class HeavyFactory implements ParticleFactory<SimpleParticleType> {
         private final SpriteProvider spriteProvider;
         public HeavyFactory(SpriteProvider spriteProvider) { this.spriteProvider = spriteProvider; }
         @Override
-        public Particle createParticle(DefaultParticleType parameters, ClientWorld world, double x, double y, double z, double vx, double vy, double vz) {
+        public Particle createParticle(SimpleParticleType parameters, ClientWorld world, double x, double y, double z, double vx, double vy, double vz) {
             ParryTrailParticle particle = new ParryTrailParticle(world, x, y, z, vx, vy, vz, true);
             particle.setSprite(this.spriteProvider);
             return particle;
         }
     }
 
-    public static class LightFactory implements ParticleFactory<DefaultParticleType> {
+    public static class LightFactory implements ParticleFactory<SimpleParticleType> {
         private final SpriteProvider spriteProvider;
         public LightFactory(SpriteProvider spriteProvider) { this.spriteProvider = spriteProvider; }
         @Override
-        public Particle createParticle(DefaultParticleType parameters, ClientWorld world, double x, double y, double z, double vx, double vy, double vz) {
+        public Particle createParticle(SimpleParticleType parameters, ClientWorld world, double x, double y, double z, double vx, double vy, double vz) {
             ParryTrailParticle particle = new ParryTrailParticle(world, x, y, z, vx, vy, vz, false);
             particle.setSprite(this.spriteProvider);
             return particle;

@@ -22,14 +22,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(HeldItemRenderer.class)
 public class HeldItemRendererMixin {
 
-    @Inject(method = "renderFirstPersonItem", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "renderFirstPersonItem", at = @At("HEAD"))
     private void riposte$renderCustomViewmodel(AbstractClientPlayerEntity player, float tickDelta, float pitch, Hand hand, float swingProgress, ItemStack item, float equipProgress, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, CallbackInfo ci) {
 
         if (FPMCompat.isFpmEnabled()) return;
 
         if (player == MinecraftClient.getInstance().player && hand == Hand.MAIN_HAND) {
             var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player)
-                    .get(new Identifier(Riposte.MOD_ID, "animation"));
+                    .get(Identifier.of(Riposte.MOD_ID, "animation"));
 
             if (animationContainer != null && animationContainer.isActive()) {
 

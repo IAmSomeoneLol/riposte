@@ -4,18 +4,21 @@ import com.google.common.collect.Multimap;
 import dev.emi.trinkets.api.SlotAttributes;
 import dev.emi.trinkets.api.SlotReference;
 import dev.emi.trinkets.api.TrinketItem;
-import net.minecraft.client.item.TooltipContext;
+import dev.emi.trinkets.api.TrinketsApi;
+import nel.riposte.Riposte;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.util.Identifier;
 
 import java.util.List;
-import java.util.UUID;
 
 public class RiposteAccessoryItem extends TrinketItem {
 
@@ -33,21 +36,60 @@ public class RiposteAccessoryItem extends TrinketItem {
     }
 
     @Override
-    public Multimap<EntityAttribute, EntityAttributeModifier> getModifiers(ItemStack stack, SlotReference slot, LivingEntity entity, UUID uuid) {
-        var modifiers = super.getModifiers(stack, slot, entity, uuid);
-        int bonusAmount = getBonusSlotCount();
+    public boolean canEquip(ItemStack stack, SlotReference slot, LivingEntity entity) {        if (stack.isOf(Riposte.BLOODLUSTFUL_RING) || stack.isOf(Riposte.SHULKER_HEAD_PLATE)) {
+            var comp = TrinketsApi.getTrinketComponent(entity).orElse(null);
+            if (comp != null && comp.isEquipped(stack.getItem())) {
+                return false;
+            }
+        }
 
-        if (this.bonusSlot != null && !this.bonusSlot.isEmpty() && bonusAmount > 0) {
-            SlotAttributes.addSlotModifier(modifiers, this.bonusSlot, uuid, bonusAmount, EntityAttributeModifier.Operation.ADDITION);
+        String slotName = slot.inventory().getSlotType().getName();
+        String groupName = slot.inventory().getSlotType().getGroup();
+        if (this.targetSlot != null) {
+            if (this.targetSlot.equals(slotName) || this.targetSlot.equals(groupName + "/" + slotName)) {
+                return true;
+            }
+        }
+        return super.canEquip(stack, slot, entity);
+    }
+
+    @Override
+    public void onUnequip(ItemStack stack, SlotReference slot, LivingEntity entity) {        if (this.bonusSlot != null && entity instanceof PlayerEntity player && !player.getWorld().isClient) {
+            var comp = TrinketsApi.getTrinketComponent(player).orElse(null);
+            if (comp != null) {
+                String[] groupSlot = this.bonusSlot.split("/");
+                if (groupSlot.length == 2) {
+                    var group = comp.getInventory().get(groupSlot[0]);
+                    if (group != null) {
+                        var inv = group.get(groupSlot[1]);
+                        if (inv != null && inv.size() > 1) {                            int lastIdx = inv.size() - 1;
+                            ItemStack inBonus = inv.getStack(lastIdx);
+                            if (!inBonus.isEmpty()) {
+                                inv.setStack(lastIdx, ItemStack.EMPTY);
+                                player.getInventory().offerOrDrop(inBonus);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        super.onUnequip(stack, slot, entity);
+    }
+
+    @Override
+    public Multimap<RegistryEntry<EntityAttribute>, EntityAttributeModifier> getModifiers(ItemStack stack, SlotReference slot, LivingEntity entity, Identifier id) {
+        var modifiers = super.getModifiers(stack, slot, entity, id);
+        int bonusAmount = getBonusSlotCount();        if (this.bonusSlot != null && !this.bonusSlot.isEmpty() && bonusAmount > 0) {
+            SlotAttributes.addSlotModifier(modifiers, this.bonusSlot, id, bonusAmount, EntityAttributeModifier.Operation.ADD_VALUE);
         }
 
         return modifiers;
     }
 
     @Override
-    public void appendTooltip(ItemStack stack, @Nullable World world, List<Text> tooltip, TooltipContext context) {
+    public void appendTooltip(ItemStack stack, Item.TooltipContext context, List<Text> tooltip, TooltipType type) {
         tooltip.add(Text.empty());
         tooltip.add(Text.translatable("tooltip.riposte.slot." + this.targetSlot).formatted(Formatting.GOLD));
-        super.appendTooltip(stack, world, tooltip, context);
+        super.appendTooltip(stack, context, tooltip, type);
     }
 }

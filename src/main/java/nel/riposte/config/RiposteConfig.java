@@ -11,7 +11,7 @@ import java.util.List;
 public class RiposteConfig extends Config {
 
     public RiposteConfig() {
-        super(new Identifier(Riposte.MOD_ID, "main"));
+        super(Identifier.of(Riposte.MOD_ID, "main"));
     }
 
     public enum FinisherMode { GAUGE_METER, PARRY_COUNT }
@@ -24,7 +24,7 @@ public class RiposteConfig extends Config {
     public double parryKnockback = 0.5;
     public boolean allowParryWhileUsingItem = false;
     public boolean enableSuccessParryRecharge = true;
-    public double globalParryCooldownRecharge = 0.15; // 30%
+    public double globalParryCooldownRecharge = 0.15;
     @ConfigGroup.Pop
     public boolean enforceKnockback = true;
 

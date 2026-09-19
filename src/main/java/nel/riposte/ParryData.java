@@ -75,9 +75,7 @@ public interface ParryData {
         if (source.isOf(DamageTypes.FALL) && (component.isEquipped(Riposte.LEATHER_SOCK) || component.isEquipped(Riposte.COPPER_GUARD))) return true;
 
         boolean hasPlate = component.isEquipped(Riposte.IRON_GUARD) || component.isEquipped(Riposte.COPPER_GUARD);
-        if (source.isIn(DamageTypeTags.IS_PROJECTILE) && hasPlate) return true;
-
-        return source.getAttacker() instanceof LivingEntity && !source.isIn(DamageTypeTags.IS_PROJECTILE) && !source.isIndirect();
+        if (source.isIn(DamageTypeTags.IS_PROJECTILE) && hasPlate) return true;        return source.getAttacker() instanceof LivingEntity && !source.isIn(DamageTypeTags.IS_PROJECTILE) && source.getAttacker() == source.getSource();
     }
 
     default boolean canParryProjectiles() {

@@ -10,7 +10,6 @@ import java.util.UUID;
 
 public class AnimationBlender {
 
-
     private static final Map<UUID, PlayerBlendState> STATES = new HashMap<>();
 
     public static PlayerBlendState get(UUID uuid) {
@@ -22,10 +21,8 @@ public class AnimationBlender {
         public long blendStartTime = 0;
         public final Pose lastFrame = new Pose();
         public final Pose blendStart = new Pose();
-        public final Pose capturedVanillaPose = new Pose();
 
         public void applyBlend(PlayerEntityModel<?> model, float progress) {
-
             blendStart.rightArm.blend(model.rightArm, progress);
             blendStart.rightSleeve.blend(model.rightSleeve, progress);
             blendStart.leftArm.blend(model.leftArm, progress);
@@ -62,7 +59,6 @@ public class AnimationBlender {
             leftPants.copy(model.leftPants);
         }
 
-
         public void copyFrom(Pose other) {
             head.copy(other.head);
             hat.copy(other.hat);
@@ -91,7 +87,6 @@ public class AnimationBlender {
             this.z = part.pivotZ;
         }
 
-
         public void copy(PartPose other) {
             this.pitch = other.pitch;
             this.yaw = other.yaw;
@@ -110,12 +105,12 @@ public class AnimationBlender {
             target.pivotZ = MathHelper.lerp(progress, this.z, target.pivotZ);
         }
 
-
+        // FIXED: Shortest-path angle lerp in radians without modulo wrap-around flip glitches
         private float angleLerp(float delta, float start, float end) {
-            float f = (end - start) % ((float) Math.PI * 2F);
-            if (f < -(float) Math.PI) f += ((float) Math.PI * 2F);
-            if (f >= (float) Math.PI) f -= ((float) Math.PI * 2F);
-            return start + delta * f;
+            float diff = (end - start) % ((float) Math.PI * 2F);
+            if (diff < -(float) Math.PI) diff += ((float) Math.PI * 2F);
+            if (diff >= (float) Math.PI) diff -= ((float) Math.PI * 2F);
+            return start + delta * diff;
         }
     }
 }

@@ -24,7 +24,7 @@ public class FinisherLoader extends SinglePreparationResourceReloader<List<Finis
 
     @Override
     public Identifier getFabricId() {
-        return new Identifier(Riposte.MOD_ID, "finisher_loader");
+        return Identifier.of(Riposte.MOD_ID, "finisher_loader");
     }
 
     @Override
@@ -63,7 +63,6 @@ public class FinisherLoader extends SinglePreparationResourceReloader<List<Finis
         boolean isGrounded = target.isOnGround();
 
         List<FinisherDefinition> valid = REGISTRY.stream()
-                // Modified to accept exact matches OR the "ALL" fallback
                 .filter(def -> def.target_size != null && (def.target_size.equalsIgnoreCase(targetSize) || def.target_size.equalsIgnoreCase("ALL")))
                 .filter(def -> !def.requires_grounded || isGrounded)
                 .filter(def -> def.weapon_requirement == null ||

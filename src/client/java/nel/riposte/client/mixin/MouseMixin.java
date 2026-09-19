@@ -19,8 +19,9 @@ public class MouseMixin {
     @Unique private static float riposte$smoothTargetPitch = 0f;
     @Unique private static boolean riposte$hasInitializedTarget = false;
 
-    @Inject(method = "updateMouse", at = @At("HEAD"), cancellable = true)
-    private void riposte$smoothCameraPan(CallbackInfo ci) {
+    // In 1.21.1, updateMouse accepts (double timeDelta)
+    @Inject(method = "updateMouse(D)V", at = @At("HEAD"), cancellable = true)
+    private void riposte$smoothCameraPan(double timeDelta, CallbackInfo ci) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || client.world == null) return;
 
@@ -40,7 +41,7 @@ public class MouseMixin {
 
             Entity target = client.world.getEntityById(fData.getFinisherTargetId());
             if (target != null) {
-                float tickDelta = client.getTickDelta();
+                float tickDelta = client.getRenderTickCounter().getTickDelta(true);
 
                 double targetX = MathHelper.lerp(tickDelta, target.prevX, target.getX());
                 double targetY = MathHelper.lerp(tickDelta, target.prevY, target.getY()) + target.getEyeHeight(target.getPose());
@@ -58,7 +59,6 @@ public class MouseMixin {
                 float rawTargetYaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
                 float rawTargetPitch = (float) Math.toDegrees(Math.atan2(-dy, dh));
 
-                // EXTRA HEAVY SMOOTHING: Dropped from 0.15 to 0.04 to entirely eliminate target damage jitter
                 if (!riposte$hasInitializedTarget) {
                     riposte$smoothTargetYaw = rawTargetYaw;
                     riposte$smoothTargetPitch = rawTargetPitch;
@@ -75,10 +75,9 @@ public class MouseMixin {
                 float newYaw = MathHelper.lerpAngleDegrees(ease, RiposteClient.originalYaw, riposte$smoothTargetYaw);
                 float newPitch = MathHelper.lerp(ease, RiposteClient.originalPitch, riposte$smoothTargetPitch);
 
+                // FIXED: Setting player.setYaw and setPitch WITHOUT destroying prevYaw/prevPitch preserves smooth interpolation!
                 client.player.setYaw(newYaw);
                 client.player.setPitch(newPitch);
-                client.player.prevYaw = newYaw;
-                client.player.prevPitch = newPitch;
             }
 
         } else if (!isExecuting && RiposteClient.finisherEndTime > 0 && RiposteClient.CLIENT_CONFIG.addons.finishers.cameraLock) {
@@ -97,8 +96,6 @@ public class MouseMixin {
 
                 client.player.setYaw(newYaw);
                 client.player.setPitch(newPitch);
-                client.player.prevYaw = newYaw;
-                client.player.prevPitch = newPitch;
             } else {
                 RiposteClient.finisherEndTime = 0;
             }

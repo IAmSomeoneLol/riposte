@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 }
 
@@ -54,7 +54,9 @@ dependencies {
 	modImplementation "dev.emi:trinkets:${project.trinkets_version}"
 
 	modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
-	modImplementation "dev.kosmx.player-anim:player-animation-lib-fabric:${project.player_animator_version}"
+	modImplementation "maven.modrinth:playeranimator:${project.player_animator_version}"
+
+	modImplementation "maven.modrinth:tiny-config:${project.tiny_config_version}"
 
 	// Better Combat & Dependencies
 	modImplementation "maven.modrinth:better-combat:${project.better_combat_version}"
@@ -62,10 +64,12 @@ dependencies {
 		exclude(group: "net.fabricmc.fabric-api")
 	}
 
+	// First-person Model (for testing/compat)
+	modCompileOnly "maven.modrinth:first-person-model:${project.first_person_model_version}"
+
 	// ETF & EMF for testing Fresh Animations
 	modLocalRuntime "maven.modrinth:entitytexturefeatures:${project.etf_version}"
 	modLocalRuntime "maven.modrinth:entity-model-features:${project.emf_version}"
-
 }
 
 processResources {
