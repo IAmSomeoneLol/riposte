@@ -145,11 +145,11 @@ public class RiposteClient implements ClientModInitializer {
 	public static boolean isAnimationActive(AbstractClientPlayerEntity player) {
 		if (player == null) return false;
 		var container = getAnimationContainer(player);
-		if (container != null && container.isActive()) return true;
-		if (player == MinecraftClient.getInstance().player && currentParryAnimation != null && !currentParryAnimation.isEmpty()) {
-			return true;
+		boolean active = container != null && container.isActive();
+		if (!active && player == MinecraftClient.getInstance().player) {
+			currentParryAnimation = "";
 		}
-		return false;
+		return active;
 	}
 
 	@Override
@@ -358,19 +358,6 @@ public class RiposteClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.START_CLIENT_TICK.register(client -> {
-			if (client.world != null) {
-				for (AbstractClientPlayerEntity p : client.world.getPlayers()) {
-					if (isAnimationActive(p) || (p instanceof FinisherData f && f.isExecutingFinisher())) {
-						float yaw = p.getYaw();
-						float prevYaw = p.prevYaw;
-						p.bodyYaw = yaw;
-						p.prevBodyYaw = prevYaw;
-						p.headYaw = yaw;
-						p.prevHeadYaw = prevYaw;
-					}
-				}
-			}
-
 			if (client.player != null) {
 				FinisherData fData = (FinisherData) client.player;
 				boolean isExecuting = fData.isExecutingFinisher();
@@ -396,19 +383,6 @@ public class RiposteClient implements ClientModInitializer {
 		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			if (client.world != null) {
-				for (AbstractClientPlayerEntity p : client.world.getPlayers()) {
-					if (isAnimationActive(p) || (p instanceof FinisherData f && f.isExecutingFinisher())) {
-						float yaw = p.getYaw();
-						float prevYaw = p.prevYaw;
-						p.bodyYaw = yaw;
-						p.prevBodyYaw = prevYaw;
-						p.headYaw = yaw;
-						p.prevHeadYaw = prevYaw;
-					}
-				}
-			}
-
 			if (shaderActive) {
 				if (!CLIENT_CONFIG.lethalParryShader || System.currentTimeMillis() - lastLethalParryTimestamp > CLIENT_CONFIG.lethalShaderDurationMs) {
 					if (client.gameRenderer != null) client.gameRenderer.disablePostProcessor();
@@ -808,7 +782,7 @@ public class RiposteClient implements ClientModInitializer {
 				boolean isFall = animName.contains("fall_damage");
 				boolean isFinisher = animName.contains("finisher");
 
-				boolean showLeft = isKick || isWeaponAnim || isFall || isFinisher || animName.contains("execute");
+				boolean showLeft = isKick || isWeaponAnim || isFall || isFinisher || animName.contains("execute") || animName.contains("fist");
 				renderLeftArm = showLeft;
 
 				if (CLIENT_CONFIG.firstPersonAnimations) {

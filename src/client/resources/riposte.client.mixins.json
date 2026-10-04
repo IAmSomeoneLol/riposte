@@ -9,7 +9,7 @@
 		"FovMixin",
 		"PlayerEntityModelMixin",
 		"HeldItemRendererMixin",
-		"AbstractClientPlayerEntityMixin",
+		"PlayerEntityRendererMixin",
 		"MouseMixin",
 		"ArmorFeatureRendererMixin"
 	],

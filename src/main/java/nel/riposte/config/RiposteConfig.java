@@ -100,7 +100,7 @@ public class RiposteConfig extends Config {
     }
 
     public static class Finishers extends ConfigSection {
-        public boolean enableFinishers = true;
+        public boolean enableFinishers = false;
         public boolean enemyDamageFinisher = false;
         public FinisherMode finisherMode = FinisherMode.GAUGE_METER;
         public FinisherTrigger finisherFillOn = FinisherTrigger.BOTH;

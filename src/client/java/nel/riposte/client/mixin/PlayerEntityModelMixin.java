@@ -1,7 +1,5 @@
 package nel.riposte.client.mixin;
 
-import dev.kosmx.playerAnim.minecraftApi.PlayerAnimationAccess;
-import nel.riposte.Riposte;
 import nel.riposte.client.RiposteClient;
 import nel.riposte.client.compat.FPMCompat;
 import nel.riposte.client.render.AnimationBlender;
@@ -9,7 +7,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -22,13 +19,12 @@ public class PlayerEntityModelMixin {
     private void riposte$handleParryAnimations(LivingEntity entity, float limbAngle, float limbDistance, float animationProgress, float headYaw, float headPitch, CallbackInfo ci) {
 
         if (entity instanceof AbstractClientPlayerEntity player) {
-            var animationContainer = PlayerAnimationAccess.getPlayerAssociatedData(player).get(Identifier.of(Riposte.MOD_ID, "animation"));
             PlayerEntityModel<?> model = (PlayerEntityModel<?>) (Object) this;
 
             MinecraftClient client = MinecraftClient.getInstance();
             boolean isFirstPerson = player == client.player && client.options.getPerspective().isFirstPerson();
             boolean inInventory = client.currentScreen != null;
-            boolean isAnimationActive = animationContainer != null && animationContainer.isActive();
+            boolean isAnimationActive = RiposteClient.isAnimationActive(player);
 
             boolean isFpm = FPMCompat.isFpmEnabled();
 
@@ -37,20 +33,14 @@ public class PlayerEntityModelMixin {
             if (isAnimationActive) {
                 boolean isFallDamage = "parry_fall_damage".equals(RiposteClient.currentParryAnimation);
 
-                model.body.yaw = 0.0f;
-                model.head.yaw = 0.0f;
-
-                float pitchRad = headPitch * ((float)Math.PI / 180F);
-
+                float pitchRad = headPitch * ((float) Math.PI / 180F);
 
                 if (!isFallDamage) {
                     model.rightArm.pitch += pitchRad;
                     model.rightSleeve.pitch += pitchRad;
 
-                    if (RiposteClient.renderLeftArm) {
-                        model.leftArm.pitch += pitchRad;
-                        model.leftSleeve.pitch += pitchRad;
-                    }
+                    model.leftArm.pitch += pitchRad;
+                    model.leftSleeve.pitch += pitchRad;
                 }
 
                 if (isFirstPerson && !isFpm && !inInventory) {
